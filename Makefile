@@ -10,5 +10,6 @@ CLIBS=-lpqxx -lpq
 clean:
 	rm -rf bin/*.out
 
-test: 
-	$(CC) $(CFLAGS) $(CLIBS) src/test.cpp -o bin/test.out
+test: clean
+	$(CC) $(CFLAGS) src/test.cpp -o bin/test.out $(CLIBS) 
+	bin/test.out
