@@ -4,7 +4,7 @@
 
 int main() {
 
-    Shell app();
+    Shell app;
 
     // Launch console application
     app.start();

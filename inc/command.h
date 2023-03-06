@@ -1,16 +1,31 @@
 #pragma once
 
+#include <iostream>
 #include <map>
+#include <list>
 
 class Command {
 
-std::string command;
-std::string args[];
+    int commandId;
+    std::string command;
+    std::list<std::string> args;
 
 public:
 
-static const std::map<std::string, int> commands;
+    Command();
+    Command(const std::string&, const std::list<std::string>);
+    Command(const Command&);
 
-static void help();
+    static const std::map<std::string, int> commands;
+
+    static void help();
+
+    friend std::ostream& operator<<(std::ostream&, const Command&);
+
+// get
+    int getCommandId() const;
+    std::string getCommand() const;
+    std::list<std::string> getArgs() const;
+
 
 };

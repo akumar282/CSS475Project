@@ -1,18 +1,19 @@
 #pragma once
 
-#include <sstream>
+#include "command.h"
 
-#include <../inc/command.h>
+#include <iostream>
+#include <sstream>
 
 class Shell {
 
-bool running;
+    bool running;
 
 public:
 
-Shell();
+    Shell();
 
-void start();
-const Command& fetchCommand();
+    void start();
+    const Command& fetchCommand();
 
 };

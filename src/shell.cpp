@@ -1,10 +1,5 @@
 #include "../inc/shell.h"
 
-const std::map<std::string, int> Shell::commands = {
-    {"help", 0},
-    {"h", 0}
-};
-
 Shell::Shell() {
     this->running = true;
 }
@@ -12,6 +7,7 @@ Shell::Shell() {
 void Shell::start() {
     while(this->running) {
         Command cmd = fetchCommand();
+        std::cout << cmd << std::endl;
     }
 }
 
@@ -21,10 +17,11 @@ const Command& Shell::fetchCommand() {
 
     while(!validCommand) {
         std::string input;
-        std::cout << "air>" << std::endl;
+        std::cout << "air>";
+        std::cout.flush();
         std::getline(std::cin, input);
 
-        std::streamstream ss(input);
+        std::stringstream ss(input);
 
         // fetch first token (will be command)
         std::string command;
@@ -32,10 +29,20 @@ const Command& Shell::fetchCommand() {
 
         // valid command
         if(Command::commands.find(command) != Command::commands.end()) {
-
+            std::list<std::string> args;
+            std::string arg;
+            while(std::getline(ss, arg, ' ')) {
+                args.push_back(arg);
+            }
+            return Command(command, args);
         }
+        // invalid command
         else {
+            std::cout << "Invalid Command\n";
             ss.clear();
         }
     }
+
+    throw new std::logic_error("Invalid State.");
+    return Command();
 }
