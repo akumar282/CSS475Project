@@ -47,7 +47,7 @@ CREATE DOMAIN meal_category_domain AS VARCHAR(20)
 -- Databse Schema 
 
 -- MealCategoryType Table
-CREATE TABLE MealToCategoryType (
+CREATE TABLE MealCategoryType (
 	id				INTEGER not null,
 	category		meal_category_domain not null,
 		
@@ -62,11 +62,20 @@ CREATE TABLE MealType (
 	Primary Key	(id)
 );
 
+--	MealToCategory Table
+CREATE TABLE MealToCategory (
+	meal_id			INTEGER not null,
+	category_id		INTEGER not null,
+		
+	Primary Key		(meal_id, category_id), 
+	Foreign Key 	(meal_id)		references MealType(id) DEFERRABLE INITIALLY DEFERRED,
+	Foreign Key		(category_id)	references MealCategoryType(id) DEFERRABLE INITIALLY DEFERRED
+);
 
 -- StatusType Table
 CREATE TABLE StatusType (
 	id				INTEGER not null,
-	status_info		status_info_domain not null,
+	status_info		status_info_domain not null unique,
 
 	Primary Key		(id)
 );
@@ -116,7 +125,7 @@ CREATE TABLE LocationType (
 -- AirlineType Table
 CREATE TABLE AirlineType (
 	id				INTEGER not null,
-	airline_name	airline_name_domain not null,
+	airline_name	airline_name_domain not null unique,
 
 	Primary Key		(id)
 );
