@@ -86,7 +86,7 @@ CREATE TABLE Flight (
 	flight_Number	INTEGER not null unique,
 	departure_Time	TIMESTAMP not null,
 	arrival_Time	TIMESTAMP not null,
-	num_passengers	INTEGER,
+	num_passengers	INTEGER not null,
 	gate_id 		INTEGER not null,
 	status_id		INTEGER not null,
 	airplane_id 	INTEGER not null,
@@ -108,7 +108,7 @@ CREATE TABLE Flight (
 CREATE TABLE Cargo (
 	id				INTEGER not null,
 	flight_id		INTEGER not null unique,
-	weight_lb		NUMERIC,					-- nullable, could be empty?
+	weight_lb		NUMERIC not null,					-- nullable, could be empty?
 	
 	Primary Key		(id),
 	Foreign Key 	(flight_id)		references Flight(id) DEFERRABLE INITIALLY DEFERRED
@@ -120,7 +120,7 @@ CREATE TABLE MealToAirline (
 	meal_id 		INTEGER not null,
 	
 	Primary Key		(flight_id, meal_id), 
-	Foreign Key 	(flight_id) 	references Flight(id) DEFERRABLE INITIALLY DEFERRED,
+	Foreign Key 	(flight_id) references Flight(id) DEFERRABLE INITIALLY DEFERRED,
 	Foreign Key 	(meal_id) 	references MealType(id) DEFERRABLE INITIALLY DEFERRED
 );
 
