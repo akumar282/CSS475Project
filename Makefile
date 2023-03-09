@@ -4,7 +4,7 @@
 # make test  - test build 
 
 CC=g++
-CFLAGS=-Wall -Wextra -g3
+CFLAGS=-Wall -Wextra -g3 -std=c++17
 CLIBS=-lpqxx -lpq
 
 clean:

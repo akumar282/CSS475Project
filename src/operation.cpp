@@ -8,6 +8,9 @@ const std::map<std::string, operation_t> Operation::commandList = {
     {"e", Operation::c_exit},
     {"help", Operation::c_help},
     {"h", Operation::c_help}
+    {""}
+
+
 };
 
 //maps keyword to its corresponding help message
@@ -31,4 +34,17 @@ error_t Operation::help() {
 
 error_t Operation::shell_exit() {
     return Error::EXIT;
+}
+// Inside of args
+//
+//
+//
+error_t Operation::create(std::list<std::string> args) {
+    // command has args
+    if(args.size() == 0) {
+        return Error::BADARGS;
+    }
+    // Creating a flight
+
+   
 }
