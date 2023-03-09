@@ -83,10 +83,10 @@ CREATE TABLE AirlineType (
 --	Flight Table
 CREATE TABLE Flight (
 	id				INTEGER not null,
-	flight_Number	INTEGER not null unique,
-	departure_Time	TIMESTAMP not null,
-	arrival_Time	TIMESTAMP not null,
-	num_passengers	INTEGER,
+	flight_number	INTEGER not null,
+	departure_time	TIMESTAMP not null,
+	arrival_time	TIMESTAMP not null,
+	num_passengers	INTEGER not null,
 	gate_id 		INTEGER not null,
 	status_id		INTEGER not null,
 	airplane_id 	INTEGER not null,
@@ -108,7 +108,7 @@ CREATE TABLE Flight (
 CREATE TABLE Cargo (
 	id				INTEGER not null,
 	flight_id		INTEGER not null unique,
-	weight_lb		NUMERIC,					-- nullable, could be empty?
+	weight_lb		NUMERIC not null,				
 	
 	Primary Key		(id),
 	Foreign Key 	(flight_id)		references Flight(id) DEFERRABLE INITIALLY DEFERRED
@@ -141,6 +141,6 @@ CREATE TABLE MealToAirline (
 \d AirlineType
 
 -- Delete Database 
-\c postgres
-SELECT current_database();
-DROP DATABASE airport;
+-- \c postgres
+-- SELECT current_database();
+-- DROP DATABASE airport;
