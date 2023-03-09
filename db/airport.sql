@@ -120,7 +120,7 @@ CREATE TABLE MealToAirline (
 	meal_id 		INTEGER not null,
 	
 	Primary Key		(flight_id, meal_id), 
-	Foreign Key 	(flight_id) 	references Flight(id) DEFERRABLE INITIALLY DEFERRED,
+	Foreign Key 	(flight_id) references Flight(id) DEFERRABLE INITIALLY DEFERRED,
 	Foreign Key 	(meal_id) 	references MealType(id) DEFERRABLE INITIALLY DEFERRED
 );
 
