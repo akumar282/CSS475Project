@@ -10,7 +10,7 @@ SELECT current_database();
 -- Airline Domain
 CREATE DOMAIN airline_name_domain AS VARCHAR(40) 
 	CHECK (
-		VALUE IN ('Alaskan Airlines', 'Spirit Airlines', 'United Airlines')
+		VALUE IN ('Alaskan Airlines', 'Spirit Airlines', 'United Airlines', 'Delta Airlines', 'Turkish Airlines', 'Qatar Airways', 'Korean Air')
 	);
 
 -- Terminal Domain
@@ -34,7 +34,7 @@ CREATE DOMAIN status_info_domain AS VARCHAR(40)
 -- LocationType Domain
 CREATE DOMAIN icao_domain AS CHAR(4) 
 	CHECK (
-		VALUE IN ('LTMF', 'UKKK', 'LTAI')
+		VALUE IN ('KLAX', 'KSEA', 'KJFK', 'KDTW')
 	);
 
 -- MealCategory Domain
@@ -194,14 +194,9 @@ CREATE TABLE MealToAirline (
 
 
 
--- CRUD operations
-
-
--- Insert Into Domain Tables
-
-
+-- CRUD operations for domain tables
 
 -- Delete Database 
--- \c postgres
--- SELECT current_database();
--- DROP DATABASE airport;
+--\c postgres
+--SELECT current_database();
+--DROP DATABASE airport;
