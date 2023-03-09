@@ -5,10 +5,51 @@ CREATE DATABASE airport;
 \c airport
 SELECT current_database();
 
+-- Domain Tables
+
+-- Airline Domain
+CREATE DOMAIN airline_name_domain AS VARCHAR(40) 
+	CHECK (
+		VALUE IN ('Alaskan Airlines', 'Spirit Airlines', 'United Airlines', 'Delta Airlines', 'Turkish Airlines', 'Qatar Airways', 'Korean Air')
+	);
+
+-- Terminal Domain
+CREATE DOMAIN terminal_letter_domain AS CHAR(1) 
+	CHECK (
+		VALUE IN ('A', 'B', 'C')
+	);
+
+-- MealType Domain
+CREATE DOMAIN meal_name_domain AS TEXT 
+	CHECK (
+		VALUE IN ('Steak Burger', ' Veggie Burger', 'Fish Tacos', 'Strip Steak', 'Pasta')
+	);
+
+-- Status Domain
+CREATE DOMAIN status_info_domain AS VARCHAR(40) 
+	CHECK (
+		VALUE IN ('Delayed', 'In Transit', 'Cancelled', 'Ready')
+	);
+
+-- LocationType Domain
+CREATE DOMAIN icao_domain AS CHAR(4) 
+	CHECK (
+		VALUE IN ('KLAX', 'KSEA', 'KJFK', 'KDTW')
+	);
+
+-- MealCategory Domain
+CREATE DOMAIN meal_category_domain AS VARCHAR(20) 
+	CHECK (
+		VALUE IN ('Halal', 'Vegan', 'Pescitarian', 'Kosher', 'Non-Veggie', 'Gluten Free')
+	);
+
+
+-- Databse Schema 
+
 -- MealCategoryType Table
-CREATE TABLE MealToCategoryType (
+CREATE TABLE MealCategoryType (
 	id				INTEGER not null,
-	category		VARCHAR(20) not null,
+	category		meal_category_domain not null,
 		
 	Primary Key		(id)
 );
@@ -16,16 +57,25 @@ CREATE TABLE MealToCategoryType (
 -- MealType Table
 CREATE TABLE MealType (
 	id			INTEGER not null,
-	meal_name 	TEXT not null,
+	meal_name 	meal_name_domain not null,
 
 	Primary Key	(id)
 );
 
+--	MealToCategory Table
+CREATE TABLE MealToCategory (
+	meal_id			INTEGER not null,
+	category_id		INTEGER not null,
+		
+	Primary Key		(meal_id, category_id), 
+	Foreign Key 	(meal_id)		references MealType(id) DEFERRABLE INITIALLY DEFERRED,
+	Foreign Key		(category_id)	references MealCategoryType(id) DEFERRABLE INITIALLY DEFERRED
+);
 
 -- StatusType Table
 CREATE TABLE StatusType (
 	id				INTEGER not null,
-	status_info		VARCHAR(40) not null,
+	status_info		status_info_domain not null unique,
 
 	Primary Key		(id)
 );
@@ -33,7 +83,7 @@ CREATE TABLE StatusType (
 --	Terminal Table
 CREATE TABLE TerminalType (
 	id			INTEGER not null,
-	letter		CHAR(1) not null,
+	letter		terminal_letter_domain not null,
 
 	Primary Key		(id)
 );
@@ -67,7 +117,7 @@ CREATE TABLE LocationType (
 	country_name	VARCHAR(40) not null,
 	state_name		VARCHAR(40) not null,
 	city_name 		VARCHAR(40) not null,
-	icao 			CHAR(4)	not null,
+	icao 			icao_domain not null,
 
 	Primary Key		(id)
 );
@@ -75,7 +125,7 @@ CREATE TABLE LocationType (
 -- AirlineType Table
 CREATE TABLE AirlineType (
 	id				INTEGER not null,
-	airline_name	VARCHAR(40) not null,
+	airline_name	airline_name_domain not null unique,
 
 	Primary Key		(id)
 );
@@ -107,7 +157,7 @@ CREATE TABLE Flight (
 --	Cargo Table
 CREATE TABLE Cargo (
 	id				INTEGER not null,
-	flight_id		INTEGER not null unique,
+	flight_id		INTEGER not null,
 	weight_lb		NUMERIC not null,				
 	
 	Primary Key		(id),
@@ -123,6 +173,8 @@ CREATE TABLE MealToAirline (
 	Foreign Key 	(flight_id) references Flight(id) DEFERRABLE INITIALLY DEFERRED,
 	Foreign Key 	(meal_id) 	references MealType(id) DEFERRABLE INITIALLY DEFERRED
 );
+
+
 
 -- After the schema has been created, test using the following commands
 
@@ -140,7 +192,11 @@ CREATE TABLE MealToAirline (
 \d LocationType
 \d AirlineType
 
+
+
+-- CRUD operations for domain tables
+
 -- Delete Database 
--- \c postgres
--- SELECT current_database();
--- DROP DATABASE airport;
+--\c postgres
+--SELECT current_database();
+--DROP DATABASE airport;
