@@ -7,10 +7,8 @@ const std::map<std::string, operation_t> Operation::commandList = {
     {"exit", Operation::c_exit},
     {"e", Operation::c_exit},
     {"help", Operation::c_help},
-    {"h", Operation::c_help}
-    {""}
-
-
+    {"h", Operation::c_help},
+    {"create", Operation::c_create}
 };
 
 //maps keyword to its corresponding help message
