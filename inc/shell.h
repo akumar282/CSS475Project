@@ -1,6 +1,8 @@
 #pragma once
 
 #include "command.h"
+#include "error.h"
+#include "operation.h"
 
 #include <iostream>
 #include <sstream>
@@ -14,6 +16,7 @@ public:
     Shell();
 
     void start();
-    const Command& fetchCommand();
+    Command fetchCommand();
+    error_t executeCommand(const Command&);
 
 };

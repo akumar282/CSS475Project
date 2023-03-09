@@ -7,11 +7,13 @@ Shell::Shell() {
 void Shell::start() {
     while(this->running) {
         Command cmd = fetchCommand();
-        std::cout << cmd << std::endl;
+        error_t status = executeCommand(cmd);
+
+        if(status == Error::EXIT) this->running = false;
     }
 }
 
-const Command& Shell::fetchCommand() {
+Command Shell::fetchCommand() {
 
     bool validCommand = false;
 
@@ -28,7 +30,7 @@ const Command& Shell::fetchCommand() {
         ss >> command; 
 
         // valid command
-        if(Command::commands.find(command) != Command::commands.end()) {
+        if(Operation::commandList.find(command) != Operation::commandList.end()) {
             std::list<std::string> args;
             std::string arg;
             while(std::getline(ss, arg, ' ')) {
@@ -45,4 +47,18 @@ const Command& Shell::fetchCommand() {
 
     throw new std::logic_error("Invalid State.");
     return Command();
+}
+
+error_t Shell::executeCommand(const Command& c) {
+    switch(Operation::commandList.at(c.getCommand())) {
+    case Operation::c_exit : {
+        return Operation::shell_exit();
+    }
+    case Operation::c_help : { 
+        return Operation::help();
+    }
+    default : {
+        return Error::BADCMD;
+    }
+    }
 }
