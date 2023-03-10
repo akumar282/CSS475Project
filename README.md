@@ -3,8 +3,7 @@ Required packages: postgresql postgresql-contrib libpq-dev libpqxx-dev
 
 # Ubuntu 
 make new (to create database, will need further action aside from make)
-make start
-make shell
+make run
 
 ## Functionality
 help - lists all commands

@@ -69,6 +69,4 @@ error_t Operation::create(std::list<std::string> args) {
         return Error::BADARGS;
     }
     // Creating a flight
-
-   
 }
