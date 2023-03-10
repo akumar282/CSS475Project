@@ -65,8 +65,7 @@ error_t Operation::status(const API& api, const std::list<std::string>& args) {
 //
 error_t Operation::create(std::list<std::string> args) {
     // command has args
-    if(args.size() == 0) {
-        return Error::BADARGS;
-    }
+    if(args.empty()) {return Error::BADARGS;}
+
     // Creating a flight
 }
