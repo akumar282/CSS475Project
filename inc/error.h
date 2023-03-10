@@ -9,5 +9,5 @@ public:
     static const int EXIT = 0;
     static const int SUCCESS = 1;
     static const int BADARGS = 2;
-    static const int BADCMD = 2;
+    static const int BADCMD = 3;
 };

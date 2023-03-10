@@ -16,6 +16,9 @@ start:
 stop:
 	sudo service postgresql stop
 
+run: shell
+	bin/shell.out
+
 new: start
 	sudo cp -r ./db /var/lib/postgresql/14/main
 	su - postgres
@@ -25,8 +28,7 @@ new: start
 
 test: clean
 	$(CC) $(CFLAGS) src/test.cpp -o bin/test.out $(CLIBS) 
-	bin/test.out
 
-shell: clean
-	$(CC) $(CFLAGS) src/main.cpp src/shell.cpp src/command.cpp src/operation.cpp -o bin/shell.out $(CLIBS)
-	bin/shell.out
+shell: start clean
+	$(CC) $(CFLAGS) src/main.cpp src/shell.cpp src/command.cpp src/operation.cpp src/api.cpp -o bin/shell.out $(CLIBS)
+	

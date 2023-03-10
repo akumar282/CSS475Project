@@ -7,13 +7,15 @@ const std::map<std::string, operation_t> Operation::commandList = {
     {"exit", Operation::c_exit},
     {"e", Operation::c_exit},
     {"help", Operation::c_help},
-    {"h", Operation::c_help}
+    {"h", Operation::c_help},
+    {"status", Operation::c_status}
 };
 
 //maps keyword to its corresponding help message
 const std::map<std::string, std::string> Operation::commandHelp = {
     {"exit", "exit - exits program"},
-    {"help", "help - lists all commands"}
+    {"help", "help - lists all commands"},
+    {"status", "status <flight-number> - gets the status of a flight"},
 };
 
 // command implementation
@@ -32,3 +34,26 @@ error_t Operation::help() {
 error_t Operation::shell_exit() {
     return Error::EXIT;
 }
+
+error_t Operation::status(const API& api, std::list<std::string> args) {
+    const std::regex validFlightNumber("[A-Z]{2}\\d{3,4}");
+    if(args.empty()) return Error::BADARGS;
+    std::string flightNum = args.front();
+    if(!std::regex_match(flightNum, validFlightNumber)) return Error::BADARGS;
+
+    // flight number was specified and is valid
+    pqxx::connection connection = api.begin();
+    pqxx::work query(connection);
+    
+    // we could abstract this out; not sure
+    std::string queryString = 
+    R"( SELECT name
+        FROM flight
+            JOIN airplanestatustype ON (flight.status_id = airplanestatustype.id)
+        WHERE flight_number = 
+    )" 
+    + flightNum + ";";
+    pqxx::row row = query.exec1(queryString);
+
+    return Error::SUCCESS;
+}   

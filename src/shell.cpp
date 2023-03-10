@@ -1,8 +1,6 @@
 #include "../inc/shell.h"
 
-Shell::Shell() {
-    this->running = true;
-}
+Shell::Shell() : running(true), api(login()) {}
 
 void Shell::start() {
     while(this->running) {
@@ -57,8 +55,24 @@ error_t Shell::executeCommand(const Command& c) {
     case Operation::c_help : { 
         return Operation::help();
     }
+    case Operation::c_status : { 
+        return Operation::status(c.getArgs(), this->getAPI());
+    }
     default : {
         return Error::BADCMD;
     }
     }
 }
+
+API Shell::login() {
+    std::string username, password;
+    std::cout << "Enter username:";
+    std::cin >> username;
+    std::cout << "Enter password:";
+    std::cin >> password;
+    // empty \n character
+    std::cin.ignore();
+    return API(username, password);
+}
+
+const API& Shell::getAPI() { return this->api; }

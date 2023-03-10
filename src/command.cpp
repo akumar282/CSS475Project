@@ -1,7 +1,5 @@
 #include "../inc/command.h"
 
-
-
 // constructors
 Command::Command(){};
 
@@ -26,6 +24,6 @@ std::ostream& operator<<(std::ostream& os, const Command& c) {
 std::string Command::getCommand() const {
     return this->command;
 }
-std::list<std::string> Command::getArgs() const {
+const std::list<std::string>& Command::getArgs() const {
     return this->args;
 }
