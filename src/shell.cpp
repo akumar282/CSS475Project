@@ -56,7 +56,7 @@ error_t Shell::executeCommand(const Command& c) {
         return Operation::help();
     }
     case Operation::c_status : { 
-        return Operation::status(c.getArgs(), this->getAPI());
+        return Operation::status(this->getAPI(), c.getArgs());
     }
     default : {
         return Error::BADCMD;

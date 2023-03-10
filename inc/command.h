@@ -24,5 +24,5 @@ public:
 
 // get
     std::string getCommand() const;
-    std::list<std::string> getArgs() const;
+    const std::list<std::string>& getArgs() const;
 };

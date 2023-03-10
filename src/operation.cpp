@@ -8,7 +8,8 @@ const std::map<std::string, operation_t> Operation::commandList = {
     {"e", Operation::c_exit},
     {"help", Operation::c_help},
     {"h", Operation::c_help},
-    {"status", Operation::c_status}
+    {"status", Operation::c_status},
+    {"create", Operation::c_create}
 };
 
 //maps keyword to its corresponding help message
@@ -35,7 +36,7 @@ error_t Operation::shell_exit() {
     return Error::EXIT;
 }
 
-error_t Operation::status(const API& api, std::list<std::string> args) {
+error_t Operation::status(const API& api, const std::list<std::string>& args) {
     const std::regex validFlightNumber("[A-Z]{2}\\d{3,4}");
     if(args.empty()) return Error::BADARGS;
     std::string flightNum = args.front();
@@ -57,3 +58,17 @@ error_t Operation::status(const API& api, std::list<std::string> args) {
 
     return Error::SUCCESS;
 }   
+
+// Inside of args
+//
+//
+//
+error_t Operation::create(std::list<std::string> args) {
+    // command has args
+    if(args.size() == 0) {
+        return Error::BADARGS;
+    }
+    // Creating a flight
+
+   
+}
