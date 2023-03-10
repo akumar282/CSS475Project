@@ -8,6 +8,7 @@ void Shell::start() {
         error_t status = executeCommand(cmd);
 
         if(status == Error::EXIT) this->running = false;
+        if(status != Error::SUCCESS) std::cerr << status;
     }
 }
 
@@ -32,6 +33,7 @@ Command Shell::fetchCommand() {
             std::list<std::string> args;
             std::string arg;
             while(std::getline(ss, arg, ' ')) {
+                if(arg == "\n" || arg == "") continue;
                 args.push_back(arg);
             }
             return Command(command, args);

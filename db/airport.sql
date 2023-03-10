@@ -1,4 +1,5 @@
 -- Initialize the new airport database
+DROP DATABASE airport;
 SELECT current_database();
 CREATE DATABASE airport;
 
@@ -21,50 +22,12 @@ Status
 Terminal
 */
 
--- Domain Tables
-
--- Airline Domain
-CREATE DOMAIN airline_name_domain AS VARCHAR(40) 
-	CHECK (
-		VALUE IN ('Alaskan Airlines', 'Spirit Airlines', 'United Airlines', 'Delta Airlines', 'Turkish Airlines', 'Qatar Airways', 'Korean Air')
-	);
-
--- LocationType Domain
-CREATE DOMAIN icao_domain AS CHAR(4) 
-	CHECK (
-		VALUE IN ('KLAX', 'KSEA', 'KJFK', 'KDTW')
-	);
-
--- MealCategory Domain
-CREATE DOMAIN meal_category_domain AS VARCHAR(20) 
-	CHECK (
-		VALUE IN ('Halal', 'Vegan', 'Pescitarian', 'Kosher', 'Non-Veggie', 'Gluten Free')
-	);
-
--- MealType Domain
-CREATE DOMAIN meal_name_domain AS TEXT 
-	CHECK (
-		VALUE IN ('Steak Burger', 'Veggie Burger', 'Fish Tacos', 'Strip Steak', 'Pasta')
-	);
-
--- Status Domain
-CREATE DOMAIN status_info_domain AS VARCHAR(40) 
-	CHECK (
-		VALUE IN ('Delayed', 'In Transit', 'Cancelled', 'Ready')
-	);
-
--- Terminal Domain
-CREATE DOMAIN terminal_letter_domain AS CHAR(1) 
-	CHECK (
-		VALUE IN ('A', 'B', 'C')
-	);
-
 -- Database Schema 
 
 -- AirlineType Table
 CREATE TABLE AirlineType (
 	id				SERIAL NOT NULL,
-	name			airline_name_domain NOT NULL UNIQUE,
+	name			VARCHAR(40) NOT NULL UNIQUE,
 
 	PRIMARY KEY		(id)
 );
@@ -72,8 +35,7 @@ CREATE TABLE AirlineType (
 -- AirplaneType Table
 CREATE TABLE AirplaneType (
 	id				SERIAL NOT NULL,
-	make			VARCHAR(40) NOT NULL,
-	model			VARCHAR(40) NOT NULL,
+	name			VARCHAR(40) NOT NULL,
 	max_cargo 		NUMERIC NOT NULL,
 	max_passengers	INTEGER NOT NULL,
 	num_rows		INTEGER NOT NULL,
@@ -81,20 +43,73 @@ CREATE TABLE AirplaneType (
 	PRIMARY KEY		(id)
 );
 
---	Cargo Table
-CREATE TABLE Cargo (
-	id				INTEGER NOT NULL,
-	flight_id		INTEGER NOT NULL,
-	weight_lb		NUMERIC NOT NULL,				
-	
-	PRIMARY KEY		(id),
-	FOREIGN KEY 	(flight_id)		REFERENCES Flight(id) DEFERRABLE INITIALLY DEFERRED
+-- LocationType Table 
+CREATE TABLE LocationType (
+	id				SERIAL NOT NULL,
+	country			VARCHAR(40) NOT NULL,
+	state			VARCHAR(40) NOT NULL,
+	city			VARCHAR(40) NOT NULL,
+	icao 			VARCHAR(4) NOT NULL UNIQUE,
+
+	PRIMARY KEY		(id)
+);
+
+-- MealType Table
+CREATE TABLE MealType (
+	id		SERIAL NOT NULL,
+	name 	VARCHAR(20) NOT NULL,
+
+	PRIMARY KEY	(id)
+);
+
+-- MealCategoryType Table
+CREATE TABLE MealCategoryType (
+	id				SERIAL NOT NULL,
+	category		VARCHAR(20) NOT NULL,
+		
+	PRIMARY KEY		(id)
+);
+
+-- StatusType Table
+CREATE TABLE StatusType (
+	id			SERIAL NOT NULL,
+	name		VARCHAR(20) NOT NULL UNIQUE,
+
+	PRIMARY KEY		(id)
+);
+
+--	Terminal Table
+CREATE TABLE TerminalType (
+	id			SERIAL NOT NULL,
+	letter		CHAR(1) NOT NULL,
+
+	PRIMARY KEY		(id)
+);
+
+--	Gate Table
+CREATE TABLE GateType (
+	id				SERIAL NOT NULL,
+	terminal_id		INTEGER NOT NULL,
+	gate_number		INTEGER NOT NULL,
+
+	PRIMARY KEY		(id), 
+	FOREIGN KEY 	(terminal_id) REFERENCES TerminalType(id) DEFERRABLE INITIALLY DEFERRED
+);
+
+--	MealToCategory Table
+CREATE TABLE MealToCategory (
+	meal_id			INTEGER NOT NULL,
+	category_id		INTEGER NOT NULL,
+		
+	PRIMARY KEY		(meal_id, category_id), 
+	FOREIGN KEY 	(meal_id)		REFERENCES MealType(id) DEFERRABLE INITIALLY DEFERRED,
+	FOREIGN KEY		(category_id)	REFERENCES MealCategoryType(id) DEFERRABLE INITIALLY DEFERRED
 );
 
 --	Flight Table
 CREATE TABLE Flight (
 	id				SERIAL NOT NULL,
-	flight_number	INTEGER NOT NULL,
+	flight_number	VARCHAR(7) NOT NULL,
 	departure_time	TIMESTAMP NOT NULL,
 	arrival_time	TIMESTAMP NOT NULL,
 	num_passengers	INTEGER NOT NULL,
@@ -115,43 +130,6 @@ CREATE TABLE Flight (
 
 );
 
---	Gate Table
-CREATE TABLE GateType (
-	id				SERIAL NOT NULL,
-	terminal_id		INTEGER NOT NULL UNIQUE,
-	gate_number		INTEGER NOT NULL,
-
-	PRIMARY KEY		(id), 
-	FOREIGN KEY 	(terminal_id) REFERENCES TerminalType(id) DEFERRABLE INITIALLY DEFERRED
-);
-
--- LocationType Table 
-CREATE TABLE LocationType (
-	id				SERIAL NOT NULL,
-	country			VARCHAR(40) NOT NULL,
-	state			VARCHAR(40) NOT NULL,
-	city			VARCHAR(40) NOT NULL,
-	icao 			icao_domain NOT NULL UNIQUE,
-
-	PRIMARY KEY		(id)
-);
-
--- MealType Table
-CREATE TABLE MealType (
-	id			SERIAL NOT NULL,
-	name 	meal_name_domain NOT NULL,
-
-	PRIMARY KEY	(id)
-);
-
--- MealCategoryType Table
-CREATE TABLE MealCategoryType (
-	id				SERIAL NOT NULL,
-	category		meal_category_domain NOT NULL,
-		
-	PRIMARY KEY		(id)
-);
-
 --	MealToAirline Table
 CREATE TABLE MealToAirline (
 	flight_id		INTEGER NOT NULL,
@@ -162,30 +140,14 @@ CREATE TABLE MealToAirline (
 	FOREIGN KEY 	(meal_id) 	REFERENCES MealType(id) DEFERRABLE INITIALLY DEFERRED
 );
 
---	MealToCategory Table
-CREATE TABLE MealToCategory (
-	meal_id			INTEGER NOT NULL,
-	category_id		INTEGER NOT NULL,
-		
-	PRIMARY KEY		(meal_id, category_id), 
-	FOREIGN KEY 	(meal_id)		REFERENCES MealType(id) DEFERRABLE INITIALLY DEFERRED,
-	FOREIGN KEY		(category_id)	REFERENCES MealCategoryType(id) DEFERRABLE INITIALLY DEFERRED
-);
-
--- StatusType Table
-CREATE TABLE StatusType (
-	id			SERIAL NOT NULL,
-	name		status_info_domain NOT NULL UNIQUE,
-
-	PRIMARY KEY		(id)
-);
-
---	Terminal Table
-CREATE TABLE TerminalType (
-	id			SERIAL NOT NULL,
-	letter		terminal_letter_domain NOT NULL,
-
-	PRIMARY KEY		(id)
+--	Cargo Table
+CREATE TABLE Cargo (
+	id				SERIAL NOT NULL,
+	flight_id		INTEGER NOT NULL,
+	weight_lb		NUMERIC NOT NULL,				
+	
+	PRIMARY KEY		(id),
+	FOREIGN KEY 	(flight_id)		REFERENCES Flight(id) DEFERRABLE INITIALLY DEFERRED
 );
 
 
@@ -194,10 +156,10 @@ CREATE TABLE TerminalType (
 \d 
 \d Flight
 \d Cargo
-\d MealToAirline
 \d MealType
+\d MealCategoryType
+\d MealToAirline
 \d MealToCategory
-\d MealToCategoryType
 \d StatusType
 \d GateType
 \d TerminalType
@@ -213,32 +175,71 @@ CREATE TABLE TerminalType (
 -- Frontloaded Data
 
 COPY AirlineType(id, name) FROM stdin;
-1	'Alaskan Airlines'
-2	'Spirit Airlines'
-3	'United Airlines'
-4	'Delta Airlines'
-5	'Turkish Airlines'
-6	'Qatar Airways'
-7	'Korean Air'
+1	Alaskan Airlines
+2	Spirit Airlines
+3	United Airlines
+4	Delta Airlines
+5	Turkish Airlines
+6	Qatar Airways
+7	Korean Air
 \.
 SELECT setval('airlinetype_id_seq', 8);
 
 -- not neccessarially correct data
-COPY AirplaneType(id, make, model, max_cargo, max_passengers, num_rows)
-1 'Boeing'				'787'	10000	192
-2 'Boeing'				'777'	10000	192
-3 'Boeing'				'737'	8000	144
-4 'Airbus'				'A320'	10000	192
-5 'McDonnell Douglas'	'MD-80'	7500	168
+COPY AirplaneType(id, name, max_cargo, max_passengers, num_rows) FROM stdin;
+1	Boeing 787	10000.0	296	6
+2	Boeing 777	10000.0	312	6
+3 	Boeing 737	8000.0	144	6
+4	Airbus A320	10000.0	192	6
+5	McDonnell Douglas MD-80	7500.0	168	6
+\.
 SELECT setval('airplanetype_id_seq', 6);
 
 COPY Cargo(id, flight_id, weight_lb) FROM stdin;
-./
+\.
 SELECT setval('cargo_id_seq', 1);
 
-COPY Flight(id, flight_number, departure_time, arrival_time, num_passengers, gate_id, status_id, airplane_id, destination_id, origin_id, airline_id) FROM stdin;
-./
-SELECT setval('flight_id_seq', 1);
+COPY LocationType(id, country, state, city, icao) FROM stdin;
+1	United States	CA	Los Angeles	KLAX
+2	United States	WA	Seattle	KSEA
+3	United States	NY	New York City	KJFK
+4	United States	MI	Detroit	KDTW
+\.
+SELECT setval('locationtype_id_seq', 5);
+
+COPY MealType(id, name) FROM stdin;
+\.
+SELECT setval('mealtype_id_seq', 1);
+
+COPY MealCategoryType(id, category) FROM stdin;
+1	Steak Burger
+2	Veggie Burger
+3	Fish Tacos
+4	Strip Steak
+5	Pasta
+\.
+SELECT setval('mealcategorytype_id_seq', 6);
+
+-- COPY MealToAirline(flight_id, meal_id) FROM stdin;
+-- \.
+
+-- COPY MealToCategory(meal_id, category_id) FROM stdin;
+-- \.
+
+COPY StatusType(id, name) FROM stdin;
+1	Delayed
+2	In Transit
+3	Cancelled
+4	Ready
+\.
+SELECT setval('statustype_id_seq', 5);
+
+COPY TerminalType(id, letter) FROM stdin;
+1	A
+2	B 
+3	C
+\.
+SELECT setval('terminaltype_id_seq', 4);
 
 COPY GateType(id, terminal_id, gate_number) FROM stdin;
 1	1	1
@@ -255,37 +256,10 @@ COPY GateType(id, terminal_id, gate_number) FROM stdin;
 12	3	1
 13	3	2
 14	3	3
-./
+\.
 SELECT setval('cargo_id_seq', 15);
 
-COPY LocationType(id, country, state, city, icao)
-1	'United States'	'CA'	'Los Angeles'	'KLAX'
-2	'United States'	'WA'	'Seattle'		'KSEA'
-3	'United States'	'NY'	'New York City'	'KJFK'
-4	'United States'	'MI'	'Detroit'		'KDTW'
+COPY Flight(id, flight_number, departure_time, arrival_time, num_passengers, gate_id, status_id, airplane_id, destination_id, origin_id, airline_id) FROM stdin;
+1	'AL001'	'2023-03-09 09:00:00'	'2023-03-09 16:00:00'	124	8	2	2	1	2	1
 \.
-SELECT setval('locationtype_id_seq', 5);
-
-COPY MealCategoryType(id, category) FROM stdin;
-1	'Steak Burger'
-2	'Veggie Burger'
-3	'Fish Tacos'
-4	'Strip Steak' 
-5	'Pasta'
-SELECT setval('mealcategorytype_id_seq', 6);
-
-COPY StatusType(id, name) FROM stdin;
-
-1	'Delayed'
-2	'In Transit'
-3	'Cancelled'	
-4 	'Ready'
-\.
-SELECT setval('statustype_id_seq', 5);
-
-COPY TerminalType(id, letter) FROM stdin;
-1	A
-2	B 
-3	C
-\.
-SELECT setval('terminaltype_id_seq', 4);
+SELECT setval('flight_id_seq', 1);

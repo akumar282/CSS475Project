@@ -37,7 +37,7 @@ error_t Operation::shell_exit() {
 }
 
 error_t Operation::status(const API& api, const std::list<std::string>& args) {
-    const std::regex validFlightNumber("[A-Z]{2}\\d{3,4}");
+    const std::regex validFlightNumber("[A-Z]{2}[0-9]{3,4}");
     if(args.empty()) return Error::BADARGS;
     std::string flightNum = args.front();
     if(!std::regex_match(flightNum, validFlightNumber)) return Error::BADARGS;
