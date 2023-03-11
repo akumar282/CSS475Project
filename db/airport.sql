@@ -227,10 +227,13 @@ SELECT setval('mealcategorytype_id_seq', 6);
 -- \.
 
 COPY StatusType(id, name) FROM stdin;
-1	Delayed
-2	In Transit
-3	Cancelled
-4	Ready
+1	Standby
+2	Boarding
+3	Departed
+4	Delayed
+5	In Transit
+6	Arrived
+7	Cancelled
 \.
 SELECT setval('statustype_id_seq', 5);
 

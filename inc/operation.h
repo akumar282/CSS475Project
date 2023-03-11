@@ -23,7 +23,7 @@ public:
     static error_t shell_exit();
     static error_t help();
     static error_t status(const API&, const std::list<std::string>&);
-    static error_t create(std::list<std::string>);
+    static error_t create(const API&, const std::list<std::string>&);
     
     // mappings
     static const std::map<std::string, operation_t> commandList;

@@ -1,7 +1,30 @@
 #include "../inc/operation.h"
 
 // command mappings
-
+static bool isValidFlightNum(const std::string& flightNum) {
+    const std::regex validFlightNumber("[A-Z]{2}[0-9]{3,4}");
+    return std::regex_match(flightNum, validFlightNumber);
+}
+static bool isValidDateTime(const std::string& time) {
+    const std::regex validDateTime("[0-9]{4}-[0-9]{2}-[0-9]{2} [0-9]{2}:[0-9]{2}:[0-9]{2}");
+    return std::regex_match(time, validDateTime);
+}
+static bool isValidICAO(const std::string& icao) {
+    const std::regex validICAO("[A-Z]{4}");
+    return std::regex_match(icao, validICAO);
+}
+static bool isValidGate(const std::string& gate) {
+    const std::regex validGate("[A-Z][0-9]+");
+    return std::regex_match(gate, validGate);
+}
+static bool isValidAirplane(const std::string& airplane) {
+    const std::regex validAirplane("[a-zA-Z0-9 ]+");
+    return std::regex_match(airplane, validAirplane);
+}
+static bool isValidAirline(const std::string& airline) {
+    const std::regex validAirline("[a-zA-Z ]+");
+    return std::regex_match(airline, validAirline);
+}
 // maps keyword to invoke command to its corresponding id
 const std::map<std::string, operation_t> Operation::commandList = {
     {"exit", Operation::c_exit},
@@ -37,11 +60,9 @@ error_t Operation::shell_exit() {
 }
 
 error_t Operation::status(const API& api, const std::list<std::string>& args) {
-    const std::regex validFlightNumber("[A-Z]{2}[0-9]{3,4}");
     if(args.empty()) return Error::BADARGS;
     std::string flightNum = args.front();
-    if(!std::regex_match(flightNum, validFlightNumber)) return Error::BADARGS;
-
+    if(!isValidFlightNum(flightNum)) return Error::BADARGS;
     // flight number was specified and is valid
     pqxx::connection connection = api.begin();
     pqxx::work query(connection);
@@ -61,12 +82,56 @@ error_t Operation::status(const API& api, const std::list<std::string>& args) {
 }   
 
 // Inside of args
+// args = {flight-number, departure, arrival, gate, airplane, destination(ICAO), origin(ICAO), airline}
 //
-//
-//
-error_t Operation::create(std::list<std::string> args) {
+error_t Operation::create(const API& api, const std::list<std::string>& args) {
     // command has args
-    if(args.empty()) {return Error::BADARGS;}
 
-    // Creating a flight
+    if(args.empty()) {return Error::BADARGS;}
+    auto it = args.begin();
+    
+    std::string flightNum = *it;
+    if(!isValidFlightNum(flightNum)) {return Error::BADARGS;}
+    std::string departure = *(++it);
+    departure += " " + *(++it);
+    std::string arrival = *(++it);
+    arrival += " " + *(++it);
+    if(!isValidDateTime(departure) || !isValidDateTime(arrival)) {return Error::BADARGS;}
+
+    std::string gate = *(++it);
+    if(!isValidGate(gate)) {return Error::BADARGS;}
+    std::string airplane = *(++it);
+    airplane += " " + *(++it);
+    if(!isValidAirplane(airplane)) {return Error::BADARGS;}
+    std::string destination = *(++it);
+    std::string origin = *(++it); 
+    if(!isValidICAO(destination) || !isValidICAO(origin)) {return Error::BADARGS;}
+    std::string airline = *(++it);
+    airline += " " + *(++it);
+    if(!isValidAirline(airline)) {return Error::BADARGS;}
+    auto Terminal = gate.substr(0, 1);
+    auto gateNum = gate.substr(1, gate.length()-1);
+    pqxx::connection connection = api.begin();
+    pqxx::work query(connection);
+
+    std::string CreateQuery = 
+    "INSERT INTO Flight(id, flight_number, departure_time, arrival_time, num_passengers, gate_id, status_id, airplane_id, destination_id, origin_id, airline_id) "
+    "VALUES ((Select NEXTVAL('flight_id_seq')), "
+    + flightNum + ","
+    + departure + ", "
+    + arrival + ", "
+    "0 , "
+    "(Select GateType.id from GateType" 
+        "JOIN TerminalType on TerminalType.id = GateType.terminal_id"
+        "WHERE TerminalType.letter =" + Terminal+
+        "AND GateType.gate_number =" + gateNum + " ), "
+    "1, "
+    "(Select id from Airplane WHERE Airplane.name =" + airplane + ")," 
+    "(Select id from LocationType WHERE LocationType.icao =" + destination +  "), "
+    "(Select id from LocationType WHERE LocationType.icao =" + origin + " ),"
+    "(Select id from Airline WHERE Airline.name =" + airline+ "));  ";
+    query.exec(CreateQuery);
+    query.commit();
+
+    return Error::SUCCESS;
 }

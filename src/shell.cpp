@@ -60,6 +60,9 @@ error_t Shell::executeCommand(const Command& c) {
     case Operation::c_status : { 
         return Operation::status(this->getAPI(), c.getArgs());
     }
+    case Operation::c_create : {
+        return Operation::create(this->getAPI(), c.getArgs());
+    }
     default : {
         return Error::BADCMD;
     }
