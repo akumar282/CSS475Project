@@ -322,3 +322,4 @@ SELECT setval('flight_id_seq', 1);
 CREATE USER admin WITH LOGIN PASSWORD 'password';
 GRANT ALL ON DATABASE airport TO admin;
 GRANT ALL ON ALL TABLES IN SCHEMA public TO admin;
+GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO admin;
