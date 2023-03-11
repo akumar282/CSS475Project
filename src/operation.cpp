@@ -122,20 +122,20 @@ error_t Operation::create(const API& api, const std::list<std::string>& args) {
 
     std::string CreateQuery = 
     "INSERT INTO Flight(id, flight_number, departure_time, arrival_time, num_passengers, gate_id, status_id, airplane_id, destination_id, origin_id, airline_id) "
-    "VALUES ((Select NEXTVAL('flight_id_seq')), "
-    + flightNum + ","
-    + departure + ", "
-    + arrival + ", "
+    "VALUES ((Select NEXTVAL('flight_id_seq')), \'"
+    + flightNum + "\', \'"
+    + departure + "\', \'"
+    + arrival + "\',"
     "0 , "
-    "(Select GateType.id from GateType" 
-        "JOIN TerminalType on TerminalType.id = GateType.terminal_id"
-        "WHERE TerminalType.letter =" + Terminal+
+    "(Select GateType.id from GateType " 
+        "JOIN TerminalType on TerminalType.id = GateType.terminal_id "
+        "WHERE TerminalType.letter = \'" + Terminal + "\' "
         "AND GateType.gate_number =" + gateNum + " ), "
     "1, "
-    "(Select id from Airplane WHERE Airplane.name =" + airplane + ")," 
-    "(Select id from LocationType WHERE LocationType.icao =" + destination +  "), "
-    "(Select id from LocationType WHERE LocationType.icao =" + origin + " ),"
-    "(Select id from Airline WHERE Airline.name =" + airline+ "));  ";
+    "(Select id from AirplaneType WHERE AirplaneType.name = \'" + airplane + "\' ), " 
+    "(Select id from LocationType WHERE LocationType.icao = \'" + destination +  "\' ), "
+    "(Select id from LocationType WHERE LocationType.icao = \'" + origin + "\' ), "
+    "(Select id from AirlineType WHERE AirlineType.name = \'" + airline+ "\' ));  ";
     query.exec(CreateQuery);
     query.commit();
 
