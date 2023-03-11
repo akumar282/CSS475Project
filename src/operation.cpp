@@ -48,13 +48,14 @@ error_t Operation::status(const API& api, const std::list<std::string>& args) {
     
     // we could abstract this out; not sure
     std::string queryString = 
-    R"( SELECT name
-        FROM flight
-            JOIN airplanestatustype ON (flight.status_id = airplanestatustype.id)
-        WHERE flight_number = 
-    )" 
-    + flightNum + ";";
+    "SELECT name "
+    "FROM flight "
+        "JOIN statustype ON (flight.status_id = statustype.id) "
+    "WHERE flight_number = \'"
+    + flightNum + "\' ;";
     pqxx::row row = query.exec1(queryString);
+
+    std::cout << row.at(0).as<std::string>() << std::endl;
 
     return Error::SUCCESS;
 }   
