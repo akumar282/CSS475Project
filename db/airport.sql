@@ -212,6 +212,7 @@ COPY AirlineType(id, name) FROM stdin;
 5	Turkish Airlines
 6	Qatar Airways
 7	Korean Air
+8 	American Airlines
 \.
 SELECT setval('airlinetype_id_seq', 8);
 

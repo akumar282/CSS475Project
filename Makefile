@@ -20,9 +20,9 @@ run: shell
 	bin/shell.out
 
 new: start
-	sudo cp -r ./db /var/lib/postgresql/14/main
+	sudo cp -r ./db /var/lib/postgresql/12/main
 	su - postgres
-# 	cd to ~/14/main/db
+# 	cd to ~/12/main/db
 #   run psql
 #   \i file necessary
 
