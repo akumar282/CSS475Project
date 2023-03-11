@@ -1,5 +1,6 @@
 -- Initialize the new airport database
 DROP DATABASE airport;
+DROP ROLE admin;
 SELECT current_database();
 CREATE DATABASE airport;
 
