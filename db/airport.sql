@@ -95,6 +95,46 @@ CREATE TABLE MealToCategory (
 	FOREIGN KEY		(category_id)	REFERENCES MealCategoryType(id) DEFERRABLE INITIALLY DEFERRED
 );
 
+
+-- Country Table
+CREATE TABLE CountryType (
+	id				SERIAL NOT NULL,
+	name			VARCHAR(40) UNIQUE,
+
+	PRIMARY KEY 	(id)
+);
+
+-- State Table
+CREATE TABLE StateType (
+	id				SERIAL NOT NULL,
+	name			VARCHAR(40),
+	country_id		INTEGER NOT NULL,
+
+	PRIMARY KEY 	(id),
+	FOREIGN KEY		(country_id)	REFERENCES CountryType(id) DEFERRABLE INITIALLY DEFERRED
+);
+
+-- City Table
+CREATE TABLE CityType (
+	id				SERIAL NOT NULL,
+	name			VARCHAR(40) NOT NULL,
+	state_id		INTEGER NOT NULL,
+
+	PRIMARY KEY 	(id),
+	FOREIGN KEY 	(state_id) 		REFERENCES StateType(id) DEFERRABLE INITIALLY DEFERRED
+);
+
+-- LocationType Table 
+CREATE TABLE LocationType (
+	id				SERIAL NOT NULL,
+	city_id			INTEGER NOT NULL, 
+	icao 			VARCHAR(4) NOT NULL UNIQUE,
+
+	PRIMARY KEY		(id),
+	FOREIGN KEY		(city_id)	REFERENCES	CityType(id) DEFERRABLE INITIALLY DEFERRED
+);
+
+
 --	Flight Table
 CREATE TABLE Flight (
 	id				SERIAL NOT NULL,
@@ -119,16 +159,6 @@ CREATE TABLE Flight (
 
 );
 
---	MealToAirline Table
-CREATE TABLE MealToAirline (
-	flight_id		INTEGER NOT NULL,
-	meal_id 		INTEGER NOT NULL,
-	
-	PRIMARY KEY		(flight_id, meal_id), 
-	FOREIGN KEY 	(flight_id) REFERENCES Flight(id) DEFERRABLE INITIALLY DEFERRED,
-	FOREIGN KEY 	(meal_id) 	REFERENCES MealType(id) DEFERRABLE INITIALLY DEFERRED
-);
-
 --	Cargo Table
 CREATE TABLE Cargo (
 	id				SERIAL NOT NULL,
@@ -139,59 +169,32 @@ CREATE TABLE Cargo (
 	FOREIGN KEY 	(flight_id)		REFERENCES Flight(id) DEFERRABLE INITIALLY DEFERRED
 );
 
--- Country Table
-CREATE TABLE CountryType (
-	id				SERIAL NOT NULL,
-	name			VARCHAR(40) UNIQUE
 
-	PRIMARY KEY 	(id),
-);
-
--- State Table
-CREATE TABLE StateType (
-	id				SERIAL NOT NULL,
-	name			VARCHAR(40),
-	country_id		INTEGER NOT NULL
-
-	PRIMARY KEY 	(id),
-	FOREIGN KEY		(country_id)	REFERENCES CountryType(id) DEFERRABLE INITIALLY DEFERRED
-);
-
--- City Table
-CREATE TABLE CityType (
-	id				SERIAL NOT NULL,
-	name			VARCHAR(40) NOT NULL,
-	state_id		INTEGER NOT NULL
-
-	PRIMARY KEY 	(id),
-	FOREIGN KEY 	(state_id) 		REFERENCES StateType(id) DEFERRABLE INITIALLY DEFERRED
-);
-
--- LocationType Table 
-CREATE TABLE LocationType (
-	id				SERIAL NOT NULL,
-	city_id			INTEGER NOT NULL, 
-	icao 			VARCHAR(4) NOT NULL UNIQUE
-
-	PRIMARY KEY		(id)
-	FOREIGN KEY		(city_id)	REFERENCES	CityType(id) DEFERRABLE INITIALLY DEFERRED
+--	MealToAirline Table
+CREATE TABLE MealToAirline (
+	flight_id		INTEGER NOT NULL,
+	meal_id 		INTEGER NOT NULL,
+	
+	PRIMARY KEY		(flight_id, meal_id), 
+	FOREIGN KEY 	(flight_id) REFERENCES Flight(id) DEFERRABLE INITIALLY DEFERRED,
+	FOREIGN KEY 	(meal_id) 	REFERENCES MealType(id) DEFERRABLE INITIALLY DEFERRED
 );
 
 -- After the schema has been created, test using the following commands
 
-\d 
-\d Flight
-\d Cargo
-\d MealType
-\d MealCategoryType
-\d MealToAirline
-\d MealToCategory
-\d StatusType
-\d GateType
-\d TerminalType
-\d AirplaneType
-\d LocationType
-\d AirlineType
+-- \d 
+-- \d Flight
+-- \d Cargo
+-- \d MealType
+-- \d MealCategoryType
+-- \d MealToAirline
+-- \d MealToCategory
+-- \d StatusType
+-- \d GateType
+-- \d TerminalType
+-- \d AirplaneType
+-- \d LocationType
+-- \d AirlineType
 
 -- Delete Database 
 --\c postgres
@@ -232,17 +235,17 @@ SELECT setval('countrytype_id_seq', 2);
 
 COPY StateType(id, name, country_id) FROM stdin;
 1	Los Angeles	1
-2	Seattle	WA	1
+2	Seattle	1
 3	New York	1
 4	Detroit	1
 \.
 SELECT setval('statetype_id_seq', 5);
 
 COPY CityType(id, name, state_id) FROM stdin;
-1	Los Angeles	CA	Los Angeles	KLAX
-2	Seattle	WA	Seattle	KSEA
-3	New York	NY	New York City	KJFK
-4	Detroit		MI	Detroit	KDTW
+1	Los Angeles	1
+2	Seattle	2
+3	New York	3
+4	Detroit	4
 \.
 SELECT setval('locationtype_id_seq', 5);
 
@@ -274,13 +277,13 @@ SELECT setval('mealcategorytype_id_seq', 6);
 -- \.
 
 COPY StatusType(id, name) FROM stdin;
-1    Standby
-2    Boarding
-3    Departed
-4    Delayed
-5    In Transit
-6    Arrived
-7    Cancelled
+1	Standby
+2	Boarding
+3	Departed
+4	Delayed
+5	In Transit
+6	Arrived
+7	Cancelled
 \.
 SELECT setval('statustype_id_seq', 8);
 
