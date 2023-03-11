@@ -43,17 +43,6 @@ CREATE TABLE AirplaneType (
 	PRIMARY KEY		(id)
 );
 
--- LocationType Table 
-CREATE TABLE LocationType (
-	id				SERIAL NOT NULL,
-	country			VARCHAR(40) NOT NULL,
-	state			VARCHAR(40) NOT NULL,
-	city			VARCHAR(40) NOT NULL,
-	icao 			VARCHAR(4) NOT NULL UNIQUE,
-
-	PRIMARY KEY		(id)
-);
-
 -- MealType Table
 CREATE TABLE MealType (
 	id		SERIAL NOT NULL,
@@ -150,6 +139,43 @@ CREATE TABLE Cargo (
 	FOREIGN KEY 	(flight_id)		REFERENCES Flight(id) DEFERRABLE INITIALLY DEFERRED
 );
 
+-- Country Table
+CREATE TABLE CountryType (
+	id				SERIAL NOT NULL,
+	name			VARCHAR(40) UNIQUE
+
+	PRIMARY KEY 	(id),
+);
+
+-- State Table
+CREATE TABLE StateType (
+	id				SERIAL NOT NULL,
+	name			VARCHAR(40),
+	country_id		INTEGER NOT NULL
+
+	PRIMARY KEY 	(id),
+	FOREIGN KEY		(country_id)	REFERENCES CountryType(id) DEFERRABLE INITIALLY DEFERRED
+);
+
+-- City Table
+CREATE TABLE CityType (
+	id				SERIAL NOT NULL,
+	name			VARCHAR(40) NOT NULL,
+	state_id		INTEGER NOT NULL
+
+	PRIMARY KEY 	(id),
+	FOREIGN KEY 	(state_id) 		REFERENCES StateType(id) DEFERRABLE INITIALLY DEFERRED
+);
+
+-- LocationType Table 
+CREATE TABLE LocationType (
+	id				SERIAL NOT NULL,
+	city_id			INTEGER NOT NULL, 
+	icao 			VARCHAR(4) NOT NULL UNIQUE
+
+	PRIMARY KEY		(id)
+	FOREIGN KEY		(city_id)	REFERENCES	CityType(id) DEFERRABLE INITIALLY DEFERRED
+);
 
 -- After the schema has been created, test using the following commands
 
@@ -199,11 +225,32 @@ COPY Cargo(id, flight_id, weight_lb) FROM stdin;
 \.
 SELECT setval('cargo_id_seq', 1);
 
-COPY LocationType(id, country, state, city, icao) FROM stdin;
-1	United States	CA	Los Angeles	KLAX
-2	United States	WA	Seattle	KSEA
-3	United States	NY	New York City	KJFK
-4	United States	MI	Detroit	KDTW
+COPY CountryType(id, name) FROM stdin;
+1	United States
+\.
+SELECT setval('countrytype_id_seq', 2);
+
+COPY StateType(id, name, country_id) FROM stdin;
+1	Los Angeles	1
+2	Seattle	WA	1
+3	New York	1
+4	Detroit	1
+\.
+SELECT setval('statetype_id_seq', 5);
+
+COPY CityType(id, name, state_id) FROM stdin;
+1	Los Angeles	CA	Los Angeles	KLAX
+2	Seattle	WA	Seattle	KSEA
+3	New York	NY	New York City	KJFK
+4	Detroit		MI	Detroit	KDTW
+\.
+SELECT setval('locationtype_id_seq', 5);
+
+COPY LocationType(id, city_id, icao) FROM stdin;
+1	1	KLAX
+2	2	KSEA
+3	3	KJFK
+4	4	KDTW
 \.
 SELECT setval('locationtype_id_seq', 5);
 
@@ -227,12 +274,14 @@ SELECT setval('mealcategorytype_id_seq', 6);
 -- \.
 
 COPY StatusType(id, name) FROM stdin;
-1	Delayed
-2	In Transit
-3	Cancelled
-4	Ready
-\.
-SELECT setval('statustype_id_seq', 5);
+1    Standby
+2    Boarding
+3    Departed
+4    Delayed
+5    In Transit
+6    Arrived
+7    Cancelled
+SELECT setval('statustype_id_seq', 8);
 
 COPY TerminalType(id, letter) FROM stdin;
 1	A

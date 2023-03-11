@@ -53,7 +53,13 @@ error_t Operation::status(const API& api, const std::list<std::string>& args) {
         "JOIN statustype ON (flight.status_id = statustype.id) "
     "WHERE flight_number = \'"
     + flightNum + "\' ;";
-    pqxx::row row = query.exec1(queryString);
+    pqxx::row row;
+    try {  
+        row = query.exec1(queryString);
+    }
+    catch(const std::exception& e) {
+        // could not find
+    }
 
     std::cout << row.at(0).as<std::string>() << std::endl;
 
