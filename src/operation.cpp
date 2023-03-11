@@ -33,7 +33,6 @@ const std::map<std::string, operation_t> Operation::commandList = {
     {"h", Operation::c_help},
     {"status", Operation::c_status},
     {"create", Operation::c_create},
-    {"list_from_dest", Operation::c_list_from_dest}
 };
 
 //maps keyword to its corresponding help message
@@ -41,7 +40,6 @@ const std::map<std::string, std::string> Operation::commandHelp = {
     {"exit", "exit - exits program"},
     {"help", "help - lists all commands"},
     {"status", "status <flight-number> - gets the status of a flight"},
-    {"list_from_dest", "list_from_dest "}
 
 };
 
@@ -63,6 +61,7 @@ error_t Operation::shell_exit() {
 }
 
 error_t Operation::status(const API& api, const std::list<std::string>& args) {
+    // #TODO add rest of get plane info here:
     if(args.empty()) return Error::BADARGS;
     std::string flightNum = args.front();
     if(!isValidFlightNum(flightNum)) return Error::BADARGS;
@@ -89,35 +88,6 @@ error_t Operation::status(const API& api, const std::list<std::string>& args) {
 
     return Error::SUCCESS;
 }   
-
-
-error_t Operation::list_from_dest(const API& api, const std::list<std::string>& args) {
-    if(args.empty()) return Error::BADARGS;
-    std::string flightNum = args.front();
-    if(!isValidFlightNum(flightNum)) return Error::BADARGS;
-    // flight number was specified and is valid
-    pqxx::connection connection = api.begin();
-    pqxx::work query(connection);
-    
-    // we could abstract this out; not sure
-    std::string queryString = 
-    "SELECT name "
-    "FROM flight "
-        "JOIN statustype ON (flight.status_id = statustype.id) "
-    "WHERE flight_number = \'"
-    + flightNum + "\' ;";
-    pqxx::row row;
-    try {  
-        row = query.exec1(queryString);
-    }
-    catch(const std::exception& e) {
-        // could not find
-    }
-
-    std::cout << row.at(0).as<std::string>() << std::endl;
-
-    return Error::SUCCESS;
-}  
 
 // Inside of args
 // args = {flight-number, departure, arrival, gate, airplane, destination(ICAO), origin(ICAO), airline}
@@ -154,20 +124,20 @@ error_t Operation::create(const API& api, const std::list<std::string>& args) {
 
     std::string CreateQuery = 
     "INSERT INTO Flight(id, flight_number, departure_time, arrival_time, num_passengers, gate_id, status_id, airplane_id, destination_id, origin_id, airline_id) "
-    "VALUES ((Select NEXTVAL('flight_id_seq')), \'"
-    + flightNum + "\', \'"
-    + departure + "\', \'"
-    + arrival + "\',"
-    "0 , "
-    "(Select GateType.id from GateType " 
-        "JOIN TerminalType on TerminalType.id = GateType.terminal_id "
-        "WHERE TerminalType.letter = \'" + Terminal + "\' "
-        "AND GateType.gate_number =" + gateNum + " ), "
-    "1, "
-    "(Select id from AirplaneType WHERE AirplaneType.name = \'" + airplane + "\' ), " 
-    "(Select id from LocationType WHERE LocationType.icao = \'" + destination +  "\' ), "
-    "(Select id from LocationType WHERE LocationType.icao = \'" + origin + "\' ), "
-    "(Select id from AirlineType WHERE AirlineType.name = \'" + airline+ "\' ));  ";
+    "VALUES ((SELECT NEXTVAL('flight_id_seq')), \'"
+        + flightNum + "\', \'"
+        + departure + "\', \'"
+        + arrival + "\',"
+        "0 , "
+        "(SELECT GateType.id FROM GateType " 
+            "JOIN TerminalType ON (TerminalType.id = GateType.terminal_id) "
+            "WHERE TerminalType.letter = \'" + Terminal + "\' "
+                "AND GateType.gate_number =" + gateNum + " ), "
+        "1, "
+        "(SELECT id FROM AirplaneType WHERE AirplaneType.name = \'" + airplane + "\' ), " 
+        "(SELECT id FROM LocationType WHERE LocationType.icao = \'" + destination +  "\' ), "
+        "(SELECT id FROM LocationType WHERE LocationType.icao = \'" + origin + "\' ), "
+        "(SELECT id FROM AirlineType WHERE AirlineType.name = \'" + airline+ "\' ));  ";
     query.exec(CreateQuery);
     query.commit();
 
