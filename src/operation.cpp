@@ -45,6 +45,8 @@ static bool isValidAirline(const std::string& airline) {
     return std::regex_match(airline, validAirline);
 }
 
+
+
 // command mappings
 
 // maps keyword to invoke command to its corresponding id
@@ -59,7 +61,8 @@ const std::map<std::string, operation_t> Operation::commandList = {
     {"list", Operation::c_list},
     {"delay", Operation::c_delay},
     {"mealT", Operation::c_mealT},
-    {"meals", Operation::c_meals}
+    {"meals", Operation::c_meals},
+    {"updatePassengers", Operation::c_updatePassengers}
 };
 
 //maps keyword to its corresponding help message
@@ -72,7 +75,8 @@ const std::map<std::string, std::string> Operation::commandHelp = {
     {"passengers", "passengers <flight-number> - lists number of passengers on the plane"},
     {"list", "list - lists every active flight"},
     {"delay", "delay <flight-number> <\"hh:mm:ss\"> - lists every active flight"},
-    {"meals", "meals <flight-number> - lists all the meals on a flight"}
+    {"meals", "meals <flight-number> - lists all the meals on a flight"},
+    {"updatePassengers", "updatePassengers <flight-number> <+ or -> - adds (+) or subtracts (-) passengers from the flight"}
 };
 
 // command implementation
@@ -470,9 +474,9 @@ error_t Operation::mealsOffered(const API& api, const std::list<std::string>& ar
     "CheckMealType",
     "SELECT Distinct MealCategoryType.category "
     "FROM MealCategoryType "
-    "JOIN MealToCategory ON (MealCategoryType.id = MealToCategory.category_id) "
-    "JOIN MealType ON (MealToCategory.meal_id = MealType.id) "
-    "JOIN MealToFlight ON (MealType.id = MealToFlight.meal_id) "
+        "JOIN MealToCategory ON (MealCategoryType.id = MealToCategory.category_id) "
+        "JOIN MealType ON (MealToCategory.meal_id = MealType.id) "
+        "JOIN MealToFlight ON (MealType.id = MealToFlight.meal_id) "
     "WHERE MealToFlight.flight_id = (SELECT Flight.id FROM Flight WHERE Flight.flight_number = $1) "
     "ORDER BY MealCategoryType.category; "
     );
@@ -485,4 +489,38 @@ error_t Operation::mealsOffered(const API& api, const std::list<std::string>& ar
     }
     return Error::SUCCESS;
 }
+
+
+error_t Operation::updatePassengers(const API& api, const std::list<std::string>& args) {
+    if (args.size() != 3) return Error::BADARGS;
+
+    std::string flightNum = args.front();
+    if (!isValidFlightNum(api, flightNum)) return Error::BADARGS;
+    
+
+    std::string sign = args.front();
+
+    int numPassengers = (sign == "+") ? 1 : -1;
+
+    pqxx::connection connection = api.begin();
+    pqxx::work query(connection);
+
+    connection.prepare(
+        "update_passengers",
+        "UPDATE Flight "
+        "SET num_passengers = num_passengers + $1 "
+        "WHERE flight_number = $2 AND (num_passengers + $1) > 0 AND (num_passengers + $1) < (SELECT max_capacity FROM AirplaneType WHERE id = Flight.airplane_id); "
+    );
+
+    auto rows = query.exec_prepared("update_passengers", numPassengers, flightNum);
+    query.commit();
+
+    std::list<std::string> first_two_args{args.begin(), std::next(args.begin(), 2)};
+    Operation::passengers(api, first_two_args);
+
+
+    return Error::SUCCESS;
+}
+
+
 
