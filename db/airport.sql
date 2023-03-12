@@ -379,9 +379,9 @@ COPY Flight(id, flight_number, departure_time, arrival_time, num_passengers, gat
 1	AL001	2023-03-09 09:00:00	2023-03-09 16:00:00	124	8	2	2	1	2	1
 2	EK230	2023-03-09 09:00:00	2023-03-09 16:00:00	124	8	2	2	1	2	1
 3	SQ028	2023-03-09 09:00:00	2023-03-09 16:00:00	124	8	2	2	1	2	1
-2	CD024	2023-03-11 11:00:00	2023-03-11 18:00:00	230	7	4	3	3	1	1
+4	CD024	2023-03-11 11:00:00	2023-03-11 18:00:00	230	7	4	3	3	1	1
 \.
-SELECT setval('flight_id_seq', 4);
+SELECT setval('flight_id_seq', 5);
 
 COPY MealToFlight(flight_id, meal_id) FROM stdin;
 1	1
