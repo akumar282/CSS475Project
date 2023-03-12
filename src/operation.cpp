@@ -297,7 +297,7 @@ error_t Operation::addCargo(const API& api, const std::list<std::string>& args) 
     }
     std::cout.flush();
     return Error::SUCCESS;
-} 
+}
 
 // Function: List all active flights in chronological order → returns list of flights in chronological order
 // args = {flight-number, departure, arrival, gate, airplane, destination(ICAO), origin(ICAO), airline}
