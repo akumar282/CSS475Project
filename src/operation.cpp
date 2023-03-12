@@ -43,7 +43,8 @@ const std::map<std::string, operation_t> Operation::commandList = {
     {"arrive", Operation::c_arrive},
     {"passengers", Operation::c_passengers},
     {"list", Operation::c_list},
-    {"delay", Operation::c_delay}
+    {"delay", Operation::c_delay},
+    {"mealT", Operation::c_mealT}
 };
 
 //maps keyword to its corresponding help message
@@ -405,3 +406,33 @@ error_t Operation::checkCargo(const API& api, const std::list<std::string>& args
     std::cout.flush();
     return Error::SUCCESS;
 }
+error_t Operation::mealsOffered(const API& api, const std::list<std::string>& args) {
+    if(args.empty()) return Error::BADARGS;
+    std::string flightNum = args.front();
+    if(!isValidFlightNum(flightNum)) return Error::BADARGS;
+    
+    // flight number was specified and is valid
+    pqxx::connection connection = api.begin();
+    pqxx::work query(connection);
+    
+    connection.prepare(
+    "CheckMealType"
+    "SELECT Distinct MealCategoryType.category"
+    "FROM MealCategoryType"
+    "JOIN MealToCategory ON (MealCategoryType.id = MealToCategory.category_id)"
+    "JOIN MealType ON (MealToCategory.meal_id = MealType.id)"
+    "JOIN MealToFlight ON (MealType.id = MealToFlight.meal_id)"
+    "WHERE MealToFlight.flight_id = (SELECT Flight.id FROM Flight WHERE Flight.flight_number = $1)"
+    "ORDER BY MealCategoryType.category;"
+    );
+
+    auto rows = query.exec_prepared("meals_offered", flightNum);
+    query.commit();
+
+    for (auto it = rows.begin(); it != rows.end(); ++it) {
+        std::cout << it[0].as<std::string>() << '\n';
+    }
+    return Error::SUCCESS;
+
+}
+
