@@ -7,7 +7,14 @@ void Shell::start() {
         Command cmd = fetchCommand();
         error_t status = executeCommand(cmd);
 
-        if(status == Error::EXIT) this->running = false;
+        if(status == Error::EXIT) {
+            this->running = false;
+            continue;
+        }
+        if(status == Error::BADARGS) {
+            std::cerr << "Bad Arguments" << std::endl;
+            continue;
+        }
         if(status != Error::SUCCESS) std::cerr << status;
     }
 }
@@ -62,6 +69,9 @@ error_t Shell::executeCommand(const Command& c) {
     }
     case Operation::c_create : {
         return Operation::create(this->getAPI(), c.getArgs());
+    }
+    case Operation::c_depart : {
+        return Operation::depart(this->getAPI(), c.getArgs());
     }
     default : {
         return Error::BADCMD;

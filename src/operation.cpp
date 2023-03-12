@@ -28,19 +28,18 @@ static bool isValidAirline(const std::string& airline) {
 // maps keyword to invoke command to its corresponding id
 const std::map<std::string, operation_t> Operation::commandList = {
     {"exit", Operation::c_exit},
-    {"e", Operation::c_exit},
     {"help", Operation::c_help},
-    {"h", Operation::c_help},
     {"status", Operation::c_status},
     {"create", Operation::c_create},
+    {"depart", Operation::c_depart},
 };
 
 //maps keyword to its corresponding help message
 const std::map<std::string, std::string> Operation::commandHelp = {
     {"exit", "exit - exits program"},
     {"help", "help - lists all commands"},
-    {"status", "status <flight-number> - gets the status of a flight"},
-
+    {"status", "status <flight-number> - gets information about a flight"},
+    {"depart", "depart <icao> - lists flights leaving from <icao>"}
 };
 
 // command implementation
@@ -141,5 +140,30 @@ error_t Operation::create(const API& api, const std::list<std::string>& args) {
     query.exec(CreateQuery);
     query.commit();
 
+    return Error::SUCCESS;
+}
+
+error_t Operation::depart(const API& api, const std::list<std::string>& args) {
+    std::string icao = args.front();
+    if(!isValidICAO(icao)) { return Error::BADARGS; }
+
+    pqxx::connection connection = api.begin();
+    pqxx::work query(connection);
+
+    connection.prepare(
+        "get_destinations",
+        "SELECT flight_number, destination.icao FROM flight "
+            "JOIN LocationType AS origin ON (flight.origin_id = origin.id) "
+            "JOIN LocationType AS destination ON (flight.destination_id = destination.id) "
+        "WHERE origin.icao = $1"
+        ";"
+    );
+
+    auto rows = query.exec_prepared("get_destinations", icao);
+
+    for(auto it = rows.begin(); it != rows.end(); ++it) {
+        std::cout << "Flight " << it[0].as<std::string>() << " to " << it[1].as<std::string>() << '\n';
+    }
+    std::cout.flush();
     return Error::SUCCESS;
 }
