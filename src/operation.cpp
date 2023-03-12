@@ -322,9 +322,10 @@ error_t Operation::list(const API& api) {
             "JOIN StatusType ON (Flight.status_id = StatusType.id) "
             "JOIN GateType ON (Flight.gate_id = GateType.id) "
             "JOIN TerminalType ON (GateType.terminal_id = TerminalType.id) "
-            "JOIN LocationType ON (LocationType.id = Flight.destination_id OR LocationType.id = Flight.origin_id) "
-            "JOIN CityType c1 ON (LocationType.city_id = c1.id) "
-            "JOIN CityType c2 ON (LocationType.city_id = c2.id) "
+            "JOIN LocationType dest ON (dest.id = Flight.destination_id) "
+            "JOIN LocationType origin ON (origin.id = Flight.origin_id) "
+            "JOIN CityType c1 ON (dest.city_id = c1.id ) "
+            "JOIN CityType c2 ON (origin.city_id = c2.id) "
             "JOIN AirlineType ON (Flight.airline_id = AirlineType.id) "
         "WHERE (StatusType.name NOT LIKE 'Arrived') "
         "ORDER BY departure_time "
@@ -332,17 +333,31 @@ error_t Operation::list(const API& api) {
     );
     auto rows = query.exec_prepared("all_flights");
     
-    std::cout << "Flight Number\tDeparture Time\tArrival Time\tGate\tTerminal\tStatus\tDestination\tOrigin\tAirline\n";
+    std::cout << std::right << std::setw(10) << "Flight #" 
+          << std::right << std::setw(24) << "Departure Time" 
+          << std::right << std::setw(24) << "Arrival Time" 
+          << std::right << std::setw(8) << "Gate" 
+          << std::right << std::setw(11) << "Terminal" 
+          << std::right << std::setw(14) << "Status" 
+          << std::right << std::setw(19) << "Destination" 
+          << std::right << std::setw(18) << "Origin" 
+          << std::right << std::setw(20) << "Airline" 
+          << '\n';
+
+    std::cout << "----------------------------------------------------------------------------------------------------------------------------------------------------\n";
+
+    
     for(auto it = rows.begin(); it != rows.end(); ++it) {
-        std::cout   << it[0].as<std::string>()    << '\t'
-                    << it[1].as<std::string>()    << '\t'
-                    << it[2].as<std::string>()    << '\t'
-                    << it[3].as<std::string>()    << '\t'
-                    << it[4].as<std::string>()    << '\t'
-                    << it[5].as<std::string>()    << '\t'
-                    << it[6].as<std::string>()    << '\t'
-                    << it[7].as<std::string>()    << '\t'
-                    << it[8].as<std::string>()    << '\n';
+        std::cout   << std::right << std::setw(10) << it[0].as<std::string>()
+                    << std::right << std::setw(24) << it[1].as<std::string>()
+                    << std::right << std::setw(24) << it[2].as<std::string>()
+                    << std::right << std::setw(8)  << it[3].as<std::string>()
+                    << std::right << std::setw(11) << it[4].as<std::string>() 
+                    << std::right << std::setw(14) << it[5].as<std::string>() 
+                    << std::right << std::setw(19) << it[6].as<std::string>() 
+                    << std::right << std::setw(18) << it[7].as<std::string>() 
+                    << std::right << std::setw(20) << it[8].as<std::string>() 
+                    << '\n';
     }
     std::cout.flush();  
     return Error::SUCCESS;
