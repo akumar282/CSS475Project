@@ -146,9 +146,9 @@ CREATE TABLE Flight (
 	gate_id 		INTEGER NOT NULL,
 	status_id		INTEGER NOT NULL,
 	airplane_id 	INTEGER NOT NULL,
+	airline_id		INTEGER NOT NULL,
 	destination_id	INTEGER NOT NULL,
 	origin_id		INTEGER NOT NULL,
-	airline_id		INTEGER NOT NULL,
 	
 	PRIMARY KEY		(id),
 	FOREIGN KEY 	(gate_id) 			REFERENCES GateType(id) DEFERRABLE INITIALLY DEFERRED,
@@ -252,10 +252,10 @@ COPY CityType(id, name, state_id) FROM stdin;
 SELECT setval('locationtype_id_seq', 5);
 
 COPY LocationType(id, city_id, icao) FROM stdin;
-1	1	KLAX
+1	1	KDTW	-- this is our airport
 2	2	KSEA
 3	3	KJFK
-4	4	KDTW
+4	4	KLAX
 \.
 SELECT setval('locationtype_id_seq', 5);
 
