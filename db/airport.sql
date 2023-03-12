@@ -242,16 +242,28 @@ COPY StateType(id, name, country_id) FROM stdin;
 2	Washington	1
 3	New York	1
 4	California	1
+5	Florida	1
+6	Ohio	1
+7	Arizona	1
+8	Texas	1
+9	Nevada	1
+10	New Jersey	1
 \.
-SELECT setval('statetype_id_seq', 5);
+SELECT setval('statetype_id_seq', 11);
 
 COPY CityType(id, name, state_id) FROM stdin;
 1	Detroit	1
 2	Seattle	2
 3	New York City	3
 4	Los Angeles	4
+5	Miami	5
+6	Columbus	6
+7	Phoenix	7
+8	Dallas	8
+9	Las Vegas	9
+10	Newark	10
 \.
-SELECT setval('locationtype_id_seq', 5);
+SELECT setval('locationtype_id_seq', 11);
 
 -- KDTW is our airport
 COPY LocationType(id, city_id, icao) FROM stdin;
@@ -259,8 +271,14 @@ COPY LocationType(id, city_id, icao) FROM stdin;
 2	2	KSEA
 3	3	KJFK
 4	4	KLAX
+5	5	KMIA
+6	6	KCMH
+7	7	KPHX
+8	8	KDFW
+9	9	KLAS
+10	10	KEWR
 \.
-SELECT setval('locationtype_id_seq', 5);
+SELECT setval('locationtype_id_seq', 11);
 
 COPY MealType(id, name) FROM stdin;
 1	Steak Burger
@@ -299,27 +317,31 @@ COPY MealCategoryType(id, category) FROM stdin;
 7	Dairy
 8	Nut-Free
 9	Gluten-Free
-10 	pescatarian
+10 	Pescatarian
 \.
 SELECT setval('mealcategorytype_id_seq', 11);
 
 COPY MealToCategory(meal_id, category_id) FROM stdin;
 1	5
+1	1
 2	3
-2 	4
+2	4
 3	5
+3	1
+3	10
 4	5
 5	3
 5	4
-5 	9
+5	9
 6	5
 7	5
+7	1
 8	5
 9	5
 10	5
-10 	10
+10	10
 11	5
-11 	10
+11	10
 12	3
 12	4
 12 	9
@@ -376,11 +398,14 @@ SELECT setval('gatetype_id_seq', 15);
 
 COPY Flight(id, flight_number, departure_time, arrival_time, num_passengers, gate_id, status_id, airplane_id, destination_id, origin_id, airline_id) FROM stdin;	
 1	AL001	2023-03-09 09:00:00	2023-03-09 16:00:00	124	8	2	2	1	2	1
-2	EK230	2023-03-09 09:00:00	2023-03-09 16:00:00	124	8	2	2	1	2	1
-3	SQ028	2023-03-09 09:00:00	2023-03-09 16:00:00	124	8	2	2	1	2	1
-4	CD024	2023-03-11 11:00:00	2023-03-11 18:00:00	230	7	4	3	3	1	1
+2	EK230	2023-03-09 09:00:00	2023-03-09 16:00:00	124	8	2	2	4	1	5
+3	SQ028	2023-03-09 09:00:00	2023-03-09 16:00:00	124	8	2	2	1	9	4
+4	CD024	2023-03-11 11:00:00	2023-03-11 18:00:00	230	7	4	3	3	1	3
+5	AA028	2023-03-11 11:00:00	2023-03-11 18:00:00	230	10	4	1	5	1	2
+6	BB022	2023-03-11 11:00:00	2023-03-11 18:00:00	230	14	3	1	7	1	6
+7	CC055	2023-03-11 11:00:00	2023-03-11 18:00:00	230	12	2	4	1	8	6
 \.
-SELECT setval('flight_id_seq', 5);
+SELECT setval('flight_id_seq', 8);
 
 COPY MealToFlight(flight_id, meal_id) FROM stdin;
 1	1
@@ -392,6 +417,42 @@ COPY MealToFlight(flight_id, meal_id) FROM stdin;
 1	19
 1	21
 1	22
+2	3
+2	5
+2	7
+2	16
+2	17
+2	21
+3	3
+3	7
+3	9
+3	18
+3	19
+3	21
+3	23
+4	1
+4	7
+4	8
+4	12
+4	13
+4	20
+4	21
+5	12
+5	14
+5	21
+6	1
+6	2
+6 	9
+6	17
+6	18
+6	21
+7	1
+7	3
+7	7
+7	11
+7	12
+7	16
+7 	21
 \.
 
 
