@@ -2,9 +2,23 @@
 
 // arguement validation
 
-static bool isValidFlightNum(const std::string& flightNum) {
+static bool isValidFlightNum(const API& api, const std::string& flightNum) {
     const std::regex validFlightNumber("[A-Z]{2}[0-9]{2,4}");
-    return std::regex_match(flightNum, validFlightNumber);
+    if (!std::regex_match(flightNum, validFlightNumber))
+        return false;
+    pqxx::connection connection = api.begin();
+    pqxx::work query(connection);
+    
+    connection.prepare("CheckDup",
+    "SELECT COUNT(*) "
+    "FROM Flight "
+    "JOIN StatusType ON (Flight.status_id = StatusType.id) "
+    "WHERE (StatusType.name NOT LIKE 'Arrived' "
+        "AND StatusType.name NOT LIKE 'Cancelled') "
+    "AND flight_number = $1 ; "
+    );
+    pqxx::result result1 = query.exec_prepared("CheckDup", flightNum);
+    return result1.at(0).at(0).as<int>() == 1;
 }
 static bool isValidDateTime(const std::string& dateTime) {
     const std::regex validDateTime("[0-9]{4}-[0-9]{2}-[0-9]{2} [0-9]{2}:[0-9]{2}:[0-9]{2}");
@@ -80,7 +94,7 @@ error_t Operation::status(const API& api, const std::list<std::string>& args) {
     // #TODO add rest of get plane info here:
     if(args.empty()) return Error::BADARGS;
     std::string flightNum = args.front();
-    if(!isValidFlightNum(flightNum)) return Error::BADARGS;
+    if(!isValidFlightNum(api, flightNum)) return Error::BADARGS;
     // flight number was specified and is valid
     pqxx::connection connection = api.begin();
     pqxx::work query(connection);
@@ -125,7 +139,7 @@ error_t Operation::create(const API& api, const std::list<std::string>& args) {
     auto it = args.begin();
     
     std::string flightNum = *it;
-    if(!isValidFlightNum(flightNum)) {return Error::BADARGS;}
+    if(!isValidFlightNum(api ,flightNum)) {return Error::BADARGS;}
     std::string departure = *(++it);
     std::string arrival = *(++it);
     if(!isValidDateTime(departure) || !isValidDateTime(arrival)) {return Error::BADARGS;}
@@ -142,20 +156,6 @@ error_t Operation::create(const API& api, const std::list<std::string>& args) {
     auto gateNum = gate.substr(1, gate.length()-1);
     pqxx::connection connection = api.begin();
     pqxx::work query(connection);
-
-    connection.prepare("CheckDup",
-    "SELECT COUNT(*) "
-    "FROM Flight "
-    "JOIN StatusType ON (Flight.status_id = StatusType.id) "
-    "WHERE (StatusType.name NOT LIKE 'Arrived' "
-        "AND StatusType.name NOT LIKE 'Cancelled') "
-    "AND flight_number = $1 ; "
-    );
-    pqxx::result result1 = query.exec_prepared("CheckDup", flightNum);
-    if(result1.at(0).at(0).as<int>() != 0) {
-        // duplicate flight number
-        return Error::DBERROR;
-    }
     connection.prepare("CreateFlight",
     "INSERT INTO Flight(id, flight_number, departure_time, arrival_time, num_passengers, gate_id, status_id, airplane_id, destination_id, origin_id, airline_id) "
     "VALUES ((SELECT NEXTVAL('flight_id_seq')),"
@@ -250,7 +250,7 @@ error_t Operation::passengers(const API& api, const std::list<std::string>& args
     // #TODO add rest of get plane info here:
     if(args.empty()) return Error::BADARGS;
     std::string flightNum = args.front();
-    if(!isValidFlightNum(flightNum)) return Error::BADARGS;
+    if(!isValidFlightNum(api, flightNum)) return Error::BADARGS;
     
     // flight number was specified and is valid
     pqxx::connection connection = api.begin();
@@ -275,7 +275,7 @@ error_t Operation::passengers(const API& api, const std::list<std::string>& args
 error_t Operation::addCargo(const API& api, const std::list<std::string>& args) {
     if(args.size() != 2) return Error::BADARGS;
     std::string flightNum = args.front();
-    if(!isValidFlightNum(flightNum)) return Error::BADARGS;
+    if(!isValidFlightNum(api, flightNum)) return Error::BADARGS;
     std::string cargo = *(++args.begin());
     
     // flight number was specified and is valid
@@ -370,7 +370,7 @@ error_t Operation::delay(const API& api, const std::list<std::string>& args) {
     auto it = args.begin();
 
     std::string flightNum = *it;
-    if(!isValidFlightNum(flightNum)) return Error::BADARGS;
+    if(!isValidFlightNum(api, flightNum)) return Error::BADARGS;
     std::string delay = *(++it);
     if(!isValidTime(delay)) return Error::BADARGS;
 
@@ -399,7 +399,7 @@ error_t Operation::delay(const API& api, const std::list<std::string>& args) {
 error_t Operation::checkCargo(const API& api, const std::list<std::string>& args) {
     if(args.size() != 2) return Error::BADARGS;
     std::string flightNum = args.front();
-    if(!isValidFlightNum(flightNum)) return Error::BADARGS;
+    if(!isValidFlightNum(api, flightNum)) return Error::BADARGS;
     std::string cargo = *(++args.begin());
     
     // flight number was specified and is valid
@@ -424,30 +424,28 @@ error_t Operation::checkCargo(const API& api, const std::list<std::string>& args
 error_t Operation::mealsOffered(const API& api, const std::list<std::string>& args) {
     if(args.empty()) return Error::BADARGS;
     std::string flightNum = args.front();
-    if(!isValidFlightNum(flightNum)) return Error::BADARGS;
-    
-    // flight number was specified and is valid
+    //checks for valid flight number and if its a duplicate
+    if(!isValidFlightNum(api, flightNum)) return Error::BADARGS; 
     pqxx::connection connection = api.begin();
     pqxx::work query(connection);
-    
+
     connection.prepare(
-    "CheckMealType"
-    "SELECT Distinct MealCategoryType.category"
-    "FROM MealCategoryType"
-    "JOIN MealToCategory ON (MealCategoryType.id = MealToCategory.category_id)"
-    "JOIN MealType ON (MealToCategory.meal_id = MealType.id)"
-    "JOIN MealToFlight ON (MealType.id = MealToFlight.meal_id)"
-    "WHERE MealToFlight.flight_id = (SELECT Flight.id FROM Flight WHERE Flight.flight_number = $1)"
-    "ORDER BY MealCategoryType.category;"
+    "CheckMealType",
+    "SELECT Distinct MealCategoryType.category "
+    "FROM MealCategoryType "
+    "JOIN MealToCategory ON (MealCategoryType.id = MealToCategory.category_id) "
+    "JOIN MealType ON (MealToCategory.meal_id = MealType.id) "
+    "JOIN MealToFlight ON (MealType.id = MealToFlight.meal_id) "
+    "WHERE MealToFlight.flight_id = (SELECT Flight.id FROM Flight WHERE Flight.flight_number = $1) "
+    "ORDER BY MealCategoryType.category; "
     );
 
-    auto rows = query.exec_prepared("meals_offered", flightNum);
+    auto rows = query.exec_prepared("CheckMealType", flightNum);
     query.commit();
 
     for (auto it = rows.begin(); it != rows.end(); ++it) {
         std::cout << it[0].as<std::string>() << '\n';
     }
     return Error::SUCCESS;
-
 }
 

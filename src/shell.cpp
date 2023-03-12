@@ -99,6 +99,9 @@ error_t Shell::executeCommand(const Command& c) {
     case Operation::c_delay : {
         return Operation::delay(this->getAPI(), c.getArgs());
     }
+    case Operation::c_mealT : {
+        return Operation::mealsOffered(this->getAPI(), c.getArgs());
+    }
     default : {
         return Error::BADCMD;
     }
