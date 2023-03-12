@@ -280,3 +280,29 @@ error_t Operation::addCargo(const API& api, const std::list<std::string>& args) 
     std::cout.flush();
     return Error::SUCCESS;
 }
+
+error_t Operation::checkCargo(const API& api, const std::list<std::string>& args) {
+    if(args.size() != 2) return Error::BADARGS;
+    std::string flightNum = args.front();
+    if(!isValidFlightNum(flightNum)) return Error::BADARGS;
+    std::string cargo = *(++args.begin());
+    
+    // flight number was specified and is valid
+    pqxx::connection connection = api.begin();
+    pqxx::work query(connection);
+    
+    connection.prepare(
+        "check_cargo",
+        "SELECT SUM(weight_lb) FROM Cargo "
+        "WHERE flight_id = (SELECT id FROM Flight WHERE flight_number = $1)"
+        ";"
+    );
+
+    auto rows = query.exec_prepared("check_cargo", cargo, flightNum);
+
+    for (auto it = rows.begin(); it != rows.end(); ++it) {
+        std::cout << it[0].as<std::string>() << '\n';
+    }
+    std::cout.flush();
+    return Error::SUCCESS;
+}

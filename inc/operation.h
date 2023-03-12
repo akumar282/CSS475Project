@@ -31,7 +31,8 @@ public:
     static error_t arrive(const API&, const std::list<std::string>&);
     static error_t passengers(const API&, const std::list<std::string>&);
     static error_t addCargo(const API&, const std::list<std::string>&);
-    
+    static error_t checkCargo(const API &, const std::list<std::string> &);
+
     // mappings
     static const std::map<std::string, operation_t> commandList;
     static const std::map<std::string, std::string> commandHelp;
