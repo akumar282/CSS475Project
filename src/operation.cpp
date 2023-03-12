@@ -110,7 +110,6 @@ error_t Operation::create(const API& api, const std::list<std::string>& args) {
     std::string arrival = *(++it);
     arrival += " " + *(++it);
     if(!isValidDateTime(departure) || !isValidDateTime(arrival)) {return Error::BADARGS;}
-
     std::string gate = *(++it);
     if(!isValidGate(gate)) {return Error::BADARGS;}
     std::string airplane = *(++it);
@@ -127,23 +126,40 @@ error_t Operation::create(const API& api, const std::list<std::string>& args) {
     pqxx::connection connection = api.begin();
     pqxx::work query(connection);
 
-    std::string CreateQuery = 
+    connection.prepare( "CheckDup",
+    "SELECT COUNT(*) "
+    "FROM Flight "
+    "JOIN StatusType ON (Flight.status_id = StatusType.id) "
+    "WHERE (StatusType.name NOT LIKE 'Arrived' "
+        "AND StatusType.name NOT LIKE 'Cancelled') "
+    "AND flight_number = $1 ; "
+    );
+    pqxx::result result1 = query.exec_prepared("CheckDup", flightNum);
+    if(result1.at(0).at(0).as<int>() != 0) {
+        // duplicate flight number
+        return Error::DBERROR;
+    }
+    connection.prepare( "CreateFlight",
     "INSERT INTO Flight(id, flight_number, departure_time, arrival_time, num_passengers, gate_id, status_id, airplane_id, destination_id, origin_id, airline_id) "
-    "VALUES ((SELECT NEXTVAL('flight_id_seq')), \'"
-        + flightNum + "\', \'"
-        + departure + "\', \'"
-        + arrival + "\',"
+    "VALUES ((SELECT NEXTVAL('flight_id_seq')),"
+        "$1 , " 
+        "$2 , " 
+        "$3 , "
         "0 , "
         "(SELECT GateType.id FROM GateType " 
             "JOIN TerminalType ON (TerminalType.id = GateType.terminal_id) "
-            "WHERE TerminalType.letter = \'" + Terminal + "\' "
-                "AND GateType.gate_number =" + gateNum + " ), "
+            "WHERE TerminalType.letter = $4 "
+                "AND GateType.gate_number = $5 ), "
         "1, "
-        "(SELECT id FROM AirplaneType WHERE AirplaneType.name = \'" + airplane + "\' ), " 
-        "(SELECT id FROM LocationType WHERE LocationType.icao = \'" + destination +  "\' ), "
-        "(SELECT id FROM LocationType WHERE LocationType.icao = \'" + origin + "\' ), "
-        "(SELECT id FROM AirlineType WHERE AirlineType.name = \'" + airline+ "\' ));  ";
-    query.exec(CreateQuery);
+        "(SELECT id FROM AirplaneType WHERE AirplaneType.name = $6 ), " 
+        "(SELECT id FROM LocationType WHERE LocationType.icao = $7 ), "
+        "(SELECT id FROM LocationType WHERE LocationType.icao = $8 ), "
+        "(SELECT id FROM AirlineType WHERE AirlineType.name = $9 ));  "
+    );
+    auto result = query.exec_prepared("CreateFlight", flightNum, departure, arrival, Terminal, gateNum, airplane, destination, origin, airline);
+    if (result.affected_rows() == 0) {
+        return Error::BADARGS;
+    }
     query.commit();
 
     return Error::SUCCESS;

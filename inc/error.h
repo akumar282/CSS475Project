@@ -10,4 +10,5 @@ public:
     static const int SUCCESS = 1;
     static const int BADARGS = 2;
     static const int BADCMD = 3;
+    static const int DBERROR = 4;
 };

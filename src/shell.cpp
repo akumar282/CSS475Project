@@ -15,7 +15,11 @@ void Shell::start() {
             std::cerr << "Bad Arguments" << std::endl;
             continue;
         }
-        if(status != Error::SUCCESS) std::cerr << status;
+        if( status == Error::DBERROR) {
+            std::cerr << "Database Error" << std::endl;
+            continue;
+        }
+        if(status != Error::SUCCESS) std::cerr << status; //keep this at the bottom
     }
 }
 
