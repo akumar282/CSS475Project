@@ -58,7 +58,8 @@ const std::map<std::string, operation_t> Operation::commandList = {
     {"passengers", Operation::c_passengers},
     {"list", Operation::c_list},
     {"delay", Operation::c_delay},
-    {"mealT", Operation::c_mealT}
+    {"mealT", Operation::c_mealT},
+    {"meals", Operation::c_meals}
 };
 
 //maps keyword to its corresponding help message
@@ -70,7 +71,8 @@ const std::map<std::string, std::string> Operation::commandHelp = {
     {"arrive", "arrive <icao> - lists flights leaving from <icao>"},
     {"passengers", "passengers <flight-number> - lists number of passengers on the plane"},
     {"list", "list - lists every active flight"},
-    {"delay", "delay <flight-number> <\"hh:mm:ss\"> - lists every active flight"}
+    {"delay", "delay <flight-number> <\"hh:mm:ss\"> - lists every active flight"},
+    {"meals", "meals <flight-number> - lists all the meals on a flight"}
 };
 
 // command implementation
@@ -177,6 +179,7 @@ error_t Operation::create(const API& api, const std::list<std::string>& args) {
     if (result.affected_rows() == 0) {
         return Error::BADARGS;
     }
+    std::cout << "Flight " << flightNum << " created." << std::endl; 
     query.commit();
 
     return Error::SUCCESS;
@@ -392,6 +395,40 @@ error_t Operation::delay(const API& api, const std::list<std::string>& args) {
     query.commit();
 
     std::cout << "Flight " << flightNum << " delayed by " << delay << std::endl;
+    return Error::SUCCESS;
+}
+
+error_t Operation::meals(const API& api, const std::list<std::string>& args) {
+    if(args.empty()) return Error::BADARGS;
+
+    std::string flightNum = args.front();
+    if(!isValidFlightNum(api, flightNum)) return Error::BADARGS;
+
+    pqxx::connection connection = api.begin();
+    pqxx::work query(connection);
+
+    connection.prepare(
+        "getMeals",
+        "SELECT MealType.name "
+        "FROM MealToFlight "
+            "JOIN MealType ON (MealToFlight.meal_id = MealType.id) "
+            "JOIN StatusType ON (StatusType.id = MealToFlight.flight_id) "
+        "WHERE MealToFlight.flight_id = (SELECT id FROM flight WHERE flight_number = $1) "
+            "AND " 
+            "("
+                "StatusType.name NOT LIKE 'Arrived'"
+                    "AND StatusType.name NOT LIKE 'Cancelled'"
+            ")"
+        "ORDER BY MealType.name"
+        ";"
+    );
+
+    auto rows = query.exec_prepared("getMeals", flightNum);
+
+    for (auto it = rows.begin(); it != rows.end(); ++it) {
+        std::cout << it[0].as<std::string>() << '\n';
+    }
+    std::cout.flush();
     return Error::SUCCESS;
 
 }

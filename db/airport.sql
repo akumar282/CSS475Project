@@ -303,7 +303,6 @@ COPY MealCategoryType(id, category) FROM stdin;
 \.
 SELECT setval('mealcategorytype_id_seq', 11);
 
-
 COPY MealToCategory(meal_id, category_id) FROM stdin;
 1	5
 2	3
