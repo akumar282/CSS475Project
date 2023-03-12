@@ -373,12 +373,14 @@ COPY GateType(id, terminal_id, gate_number) FROM stdin;
 13	3	2
 14	3	3
 \.
-SELECT setval('cargo_id_seq', 15);
+SELECT setval('gatetype_id_seq', 15);
 
-COPY Flight(id, flight_number, departure_time, arrival_time, num_passengers, gate_id, status_id, airplane_id, destination_id, origin_id, airline_id) FROM stdin;
+COPY Flight(id, flight_number, departure_time, arrival_time, num_passengers, gate_id, status_id, airplane_id, destination_id, origin_id, airline_id) FROM stdin;	
 1	AL001	2023-03-09 09:00:00	2023-03-09 16:00:00	124	8	2	2	1	2	1
+2	EK230	2023-03-09 09:00:00	2023-03-09 16:00:00	124	8	2	2	1	2	1
+3	SQ028	2023-03-09 09:00:00	2023-03-09 16:00:00	124	8	2	2	1	2	1
 \.
-SELECT setval('flight_id_seq', 1);
+SELECT setval('flight_id_seq', 4);
 
 COPY MealToFlight(flight_id, meal_id) FROM stdin;
 1	1
@@ -391,6 +393,16 @@ COPY MealToFlight(flight_id, meal_id) FROM stdin;
 1	21
 1	22
 \.
+
+
+COPY Cargo(id, flight_id, weight_lb) FROM stdin;
+1	1	1000.0
+2	2	1000.0
+3	1	1000.0
+4	2	1000.0
+5	3	1000.0
+\.
+SELECT setval('cargo_id_seq', 6);
 
 -- permissions
 CREATE USER admin WITH LOGIN PASSWORD 'password';

@@ -260,4 +260,32 @@ error_t Operation::passengers(const API& api, const std::list<std::string>& args
     }
     std::cout.flush();  
     return Error::SUCCESS;
-}   
+}
+
+error_t Operation::addCargo(const API& api, const std::list<std::string>& args) {
+    if(args.size() != 2) return Error::BADARGS;
+    std::string flightNum = args.front();
+    if(!isValidFlightNum(flightNum)) return Error::BADARGS;
+    std::string cargo = *(++args.begin());
+    
+    // flight number was specified and is valid
+    pqxx::connection connection = api.begin();
+    pqxx::work query(connection);
+    
+    connection.prepare(
+        "add_cargo",
+        "INSERT INTO Cargo(id, flight_id, weight_lb)"
+        "VALUES ((SELECT NEXTVAL('cargo_id_seq')),"
+        "(SELECT id FROM Flight WHERE flight_number = $1),"
+        "$2)"
+      ";"
+    );
+
+    auto rows = query.exec_prepared("add_cargo", cargo, flightNum);
+
+    for (auto it = rows.begin(); it != rows.end(); ++it) {
+        std::cout << it[0].as<std::string>() << '\n';
+    }
+    std::cout.flush();
+    return Error::SUCCESS;
+}
