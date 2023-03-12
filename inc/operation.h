@@ -24,6 +24,7 @@ public:
     static constexpr operation_t c_passengers = 6;
     static constexpr operation_t c_list = 7;
     static constexpr operation_t c_delay = 8;
+    static constexpr operation_t c_meals = 9;
 
     // operation functions
     static error_t shell_exit();
@@ -36,6 +37,7 @@ public:
     static error_t addCargo(const API&, const std::list<std::string>&);
     static error_t list(const API&);
     static error_t delay(const API&, const std::list<std::string>&);
+    static error_t meals(const API&, const std::list<std::string>&);
 
     // mappings
     static const std::map<std::string, operation_t> commandList;

@@ -1,10 +1,10 @@
 help
 list
 status AL001
-create AA1234 "2021-03-01 12:00:00" "2021-03-01 14:00:00" A3 "Boeing 787" KLAX KJFK "American Airlines"
+create AA1234 "2021-03-01 12:00:00" "2021-03-01 14:00:00" A3 "Boeing 787" KDTW KJFK "American Airlines"
 depart KSEA
 arrive KLAX
 passengers AA1234
-delay AL001
+delay AL001 "00:30:01"
 status AL001
 exit
