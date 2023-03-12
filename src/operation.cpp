@@ -100,7 +100,8 @@ error_t Operation::status(const API& api, const std::list<std::string>& args) {
     auto rows = query.exec_prepared1("get_flight", flightNum);
     std::cout << "Flight " << rows[0] << " from " << rows[9] << " to " << rows[10] << " is " << rows[6] << '\n';
     std::cout << "Expected departure at " << rows[1] << " and arrives at " << rows[2] << '\n';
-    std::cout << "Flight uses a(n) " << rows[7] << " with " << rows[8] << '\n';  
+    std::cout << "Flight uses a(n) " << rows[7] << " with " << rows[8] << '\n';
+    std::cout << "Flight will use gate " << rows[4] << rows[5] << " and has " << rows[3] << " passengers." << std::endl;
 
     return Error::SUCCESS;
 }   
