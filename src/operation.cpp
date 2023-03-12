@@ -104,7 +104,6 @@ error_t Operation::create(const API& api, const std::list<std::string>& args) {
     std::string arrival = *(++it);
     arrival += " " + *(++it);
     if(!isValidDateTime(departure) || !isValidDateTime(arrival)) {return Error::BADARGS;}
-
     std::string gate = *(++it);
     if(!isValidGate(gate)) {return Error::BADARGS;}
     std::string airplane = *(++it);
@@ -121,6 +120,19 @@ error_t Operation::create(const API& api, const std::list<std::string>& args) {
     pqxx::connection connection = api.begin();
     pqxx::work query(connection);
 
+    connection.prepare( "CheckDup",
+    "SELECT COUNT(*) "
+    "FROM Flight "
+    "JOIN StatusType ON (Flight.status_id = StatusType.id) "
+    "WHERE (StatusType.name NOT LIKE 'Arrived' "
+        "AND StatusType.name NOT LIKE 'Cancelled') "
+    "AND flight_number = $1 ; "
+    );
+    pqxx::result result1 = query.exec_prepared("CheckDup", flightNum);
+    if(result1.at(0).at(0).as<int>() != 0) {
+        // duplicate flight number
+        return Error::DBERROR;
+    }
     connection.prepare( "CreateFlight",
     "INSERT INTO Flight(id, flight_number, departure_time, arrival_time, num_passengers, gate_id, status_id, airplane_id, destination_id, origin_id, airline_id) "
     "VALUES ((SELECT NEXTVAL('flight_id_seq')),"
