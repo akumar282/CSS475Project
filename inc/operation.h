@@ -35,6 +35,7 @@ public:
     static error_t arrive(const API&, const std::list<std::string>&);
     static error_t passengers(const API&, const std::list<std::string>&);
     static error_t addCargo(const API&, const std::list<std::string>&);
+    static error_t checkCargo(const API &, const std::list<std::string> &);
     static error_t list(const API&);
     static error_t delay(const API&, const std::list<std::string>&);
     static error_t meals(const API&, const std::list<std::string>&);
