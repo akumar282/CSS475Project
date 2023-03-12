@@ -38,6 +38,7 @@ const std::map<std::string, operation_t> Operation::commandList = {
     {"depart", Operation::c_depart},
     {"arrive", Operation::c_arrive},
     {"passengers", Operation::c_passengers},
+    {"list", Operation::c_list}
 };
 
 //maps keyword to its corresponding help message
@@ -47,7 +48,8 @@ const std::map<std::string, std::string> Operation::commandHelp = {
     {"status", "status <flight-number> - gets information about a flight"},
     {"depart", "depart <icao> - lists flights leaving from <icao>"},
     {"arrive", "arrive <icao> - lists flights leaving from <icao>"},
-    {"passengers", "passengers <flight-number> - lists number of passengers on the plane"}
+    {"passengers", "passengers <flight-number> - lists number of passengers on the plane"},
+    {"list", "list - lists every active flight"}
 };
 
 // command implementation
@@ -240,4 +242,54 @@ error_t Operation::passengers(const API& api, const std::list<std::string>& args
     }
     std::cout.flush();  
     return Error::SUCCESS;
-}   
+}  
+
+// Function: List all active flights in chronological order → returns list of flights in chronological order
+// args = {flight-number, departure, arrival, gate, airplane, destination(ICAO), origin(ICAO), airline}
+//
+error_t Operation::list(const API& api) {
+    // #TODO add rest of get plane info here:
+    /*
+    if(args.empty()) return Error::BADARGS;
+    std::string flightNum = args.front();
+    if(!isValidFlightNum(flightNum)) return Error::BADARGS;
+    */
+    
+    // flight number was specified and is valid
+    pqxx::connection connection = api.begin();
+    pqxx::work query(connection);
+    
+    connection.prepare(
+        "all_flights",
+        "SELECT * "
+        "FROM Flight "
+        "JOIN StatusType ON (Flight.status_id = StatusType.id) "
+        "WHERE (StatusType.name NOT LIKE 'Arrived' "
+            "AND StatusType.name NOT LIKE 'Cancelled') "
+        "ORDER BY departure_time DESC "
+        ";"
+    );
+
+    auto rows = query.exec_prepared("all_flights");
+    
+    std::cout << "Flight Number\tDeparture Time\tArrival Time\tNumber of Passengers\tGate ID\tStatus ID\tAirplane ID\tDestination\tOrigin ID\tAirline\n";
+
+    for(auto it = rows.begin(); it != rows.end(); ++it) {
+        std::cout   << it[1].as<std::string>()    << '\t'
+                    << it[2].as<std::string>()    << '\t'
+                    << it[3].as<std::string>()    << '\t'
+                    << it[4].as<std::string>()    << '\t'
+                    << it[5].as<std::string>()    << '\t'
+                    << it[6].as<std::string>()    << '\t'
+                    << it[7].as<std::string>()    << '\t'
+                    << it[8].as<std::string>()    << '\t'
+                    << it[9].as<std::string>()    << '\t'
+                    << it[10].as<std::string>()   << '\n';
+    }
+    std::cout.flush();  
+    return Error::SUCCESS;
+} 
+
+
+
+

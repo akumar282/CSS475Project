@@ -374,6 +374,7 @@ SELECT setval('cargo_id_seq', 15);
 
 COPY Flight(id, flight_number, departure_time, arrival_time, num_passengers, gate_id, status_id, airplane_id, destination_id, origin_id, airline_id) FROM stdin;
 1	AL001	2023-03-09 09:00:00	2023-03-09 16:00:00	124	8	2	2	1	2	1
+2	CD024	2023-03-11 11:00:00	2023-03-11 18:00:00	230	7	4	3	3	1	1
 \.
 SELECT setval('flight_id_seq', 1);
 
