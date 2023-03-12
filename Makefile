@@ -25,7 +25,12 @@ new: start
 # 	cd to ~/14/main/db
 #   run psql
 #   \i file necessary
-
+mstart: start
+	sudo cp -r ./db /var/lib/postgresql/12/main
+	su - postgres
+# 	cd to ~/12/main/db
+#   run psql
+#   \i file necessary
 test: clean
 	$(CC) $(CFLAGS) src/test.cpp -o bin/test.out $(CLIBS) 
 

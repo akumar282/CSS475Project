@@ -17,7 +17,7 @@ Gate
 Location
 Meal
 MealCategory
-MealToAirline
+MealToFlight
 MealToCategory
 Status
 Terminal
@@ -171,8 +171,8 @@ CREATE TABLE Cargo (
 );
 
 
---	MealToAirline Table
-CREATE TABLE MealToAirline (
+--	MealToFlight Table
+CREATE TABLE MealToFlight (
 	flight_id		INTEGER NOT NULL,
 	meal_id 		INTEGER NOT NULL,
 	
@@ -188,7 +188,7 @@ CREATE TABLE MealToAirline (
 -- \d Cargo
 -- \d MealType
 -- \d MealCategoryType
--- \d MealToAirline
+-- \d MealToFlight
 -- \d MealToCategory
 -- \d StatusType
 -- \d GateType
@@ -260,23 +260,81 @@ COPY LocationType(id, city_id, icao) FROM stdin;
 SELECT setval('locationtype_id_seq', 5);
 
 COPY MealType(id, name) FROM stdin;
-\.
-SELECT setval('mealtype_id_seq', 1);
-
-COPY MealCategoryType(id, category) FROM stdin;
 1	Steak Burger
 2	Veggie Burger
 3	Fish Tacos
 4	Strip Steak
-5	Pasta
+5	Vegan Pasta
+6	Chicken Sandwich
+7	Chicken Nuggets
+8	Beef Enchiladas
+9	Pork Sandwich
+10	Seafood Salad
+11 	Shrimp Tacos
+12 	Mushroom Tacos
+13	Caesar Salad
+14	Grilled Cheese
+15	Fruit Cup
+16	Coca-Cola
+17	Sprite
+18	Fanta
+19	Milk
+20	Orange Juice
+21	Water
+22	Yogurt Parfait
+23	Fruit Salad
 \.
-SELECT setval('mealcategorytype_id_seq', 6);
+SELECT setval('mealtype_id_seq', 24);
 
--- COPY MealToAirline(flight_id, meal_id) FROM stdin;
--- \.
+COPY MealCategoryType(id, category) FROM stdin;
+1 	Halal
+2	Kosher
+3 	Vegan
+4	Vegetarian
+5	Non-Vegetarian
+6	Non-Dairy
+7	Dairy
+8	Nut-Free
+9	Gluten-Free
+10 	pescatarian
+\.
+SELECT setval('mealcategorytype_id_seq', 11);
 
--- COPY MealToCategory(meal_id, category_id) FROM stdin;
--- \.
+
+COPY MealToCategory(meal_id, category_id) FROM stdin;
+1	5
+2	3
+2 	4
+3	5
+4	5
+5	3
+5	4
+5 	9
+6	5
+7	5
+8	5
+9	5
+10	5
+10 	10
+11	5
+11 	10
+12	3
+12	4
+12 	9
+13	4
+14	4
+15	3
+15	4
+16	6
+17	6
+18	6
+19	7
+20	6
+21	6
+22	7
+23	3
+23	4
+\.
 
 COPY StatusType(id, name) FROM stdin;
 1	Standby
@@ -318,6 +376,18 @@ COPY Flight(id, flight_number, departure_time, arrival_time, num_passengers, gat
 1	AL001	2023-03-09 09:00:00	2023-03-09 16:00:00	124	8	2	2	1	2	1
 \.
 SELECT setval('flight_id_seq', 1);
+
+COPY MealToFlight(flight_id, meal_id) FROM stdin;
+1	1
+1	2
+1	3
+1	4
+1	5
+1	16
+1	19
+1	21
+1	22
+\.
 
 -- permissions
 CREATE USER admin WITH LOGIN PASSWORD 'password';
