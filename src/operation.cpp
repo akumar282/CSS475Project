@@ -1,6 +1,7 @@
 #include "../inc/operation.h"
 
-// command mappings
+// arguement validation
+
 static bool isValidFlightNum(const std::string& flightNum) {
     const std::regex validFlightNumber("[A-Z]{2}[0-9]{3,4}");
     return std::regex_match(flightNum, validFlightNumber);
@@ -25,6 +26,9 @@ static bool isValidAirline(const std::string& airline) {
     const std::regex validAirline("[a-zA-Z ]+");
     return std::regex_match(airline, validAirline);
 }
+
+// command mappings
+
 // maps keyword to invoke command to its corresponding id
 const std::map<std::string, operation_t> Operation::commandList = {
     {"exit", Operation::c_exit},
@@ -32,6 +36,7 @@ const std::map<std::string, operation_t> Operation::commandList = {
     {"status", Operation::c_status},
     {"create", Operation::c_create},
     {"depart", Operation::c_depart},
+    {"arrive", Operation::c_arrive}
 };
 
 //maps keyword to its corresponding help message
@@ -39,7 +44,8 @@ const std::map<std::string, std::string> Operation::commandHelp = {
     {"exit", "exit - exits program"},
     {"help", "help - lists all commands"},
     {"status", "status <flight-number> - gets information about a flight"},
-    {"depart", "depart <icao> - lists flights leaving from <icao>"}
+    {"depart", "depart <icao> - lists flights leaving from <icao>"},
+    {"arrive", "arrive <icao> - lists flights leaving from <icao>"}
 };
 
 // command implementation
@@ -164,6 +170,32 @@ error_t Operation::depart(const API& api, const std::list<std::string>& args) {
     for(auto it = rows.begin(); it != rows.end(); ++it) {
         std::cout << "Flight " << it[0].as<std::string>() << " to " << it[1].as<std::string>() << '\n';
     }
-    std::cout.flush();
+    std::cout.flush();  
+    return Error::SUCCESS;
+}
+
+error_t Operation::arrive(const API& api, const std::list<std::string>& args) {
+    std::string icao = args.front();
+    if(!isValidICAO(icao)) { return Error::BADARGS; }
+
+    pqxx::connection connection = api.begin();
+    pqxx::work query(connection);
+
+    connection.prepare(
+        "get_destinations",
+        "SELECT flight_number, origin.icao FROM flight "
+            "JOIN LocationType AS origin ON (flight.origin_id = origin.id) "
+            "JOIN LocationType AS destination ON (flight.destination_id = destination.id) "
+        "WHERE destination.icao = $1"
+            "AND "
+        ";"
+    );
+
+    auto rows = query.exec_prepared("get_arrivals", icao);
+
+    for(auto it = rows.begin(); it != rows.end(); ++it) {
+        std::cout << "Flight " << it[0].as<std::string>() << " from " << it[1].as<std::string>() << '\n';
+    }
+    std::cout.flush();  
     return Error::SUCCESS;
 }
