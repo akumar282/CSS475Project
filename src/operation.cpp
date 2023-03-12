@@ -6,9 +6,13 @@ static bool isValidFlightNum(const std::string& flightNum) {
     const std::regex validFlightNumber("[A-Z]{2}[0-9]{2,4}");
     return std::regex_match(flightNum, validFlightNumber);
 }
-static bool isValidDateTime(const std::string& time) {
+static bool isValidDateTime(const std::string& dateTime) {
     const std::regex validDateTime("[0-9]{4}-[0-9]{2}-[0-9]{2} [0-9]{2}:[0-9]{2}:[0-9]{2}");
-    return std::regex_match(time, validDateTime);
+    return std::regex_match(dateTime, validDateTime);
+}
+static bool isValidTime(const std::string& time) {
+    const std::regex validTime("^(?:[01][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9](?:\\.[0-9]{1,3})?$");
+    return std::regex_match(time, validTime);
 }
 static bool isValidICAO(const std::string& icao) {
     const std::regex validICAO("[A-Z]{4}");
@@ -38,7 +42,8 @@ const std::map<std::string, operation_t> Operation::commandList = {
     {"depart", Operation::c_depart},
     {"arrive", Operation::c_arrive},
     {"passengers", Operation::c_passengers},
-    {"list", Operation::c_list}
+    {"list", Operation::c_list},
+    {"delay", Operation::c_delay}
 };
 
 //maps keyword to its corresponding help message
@@ -46,10 +51,11 @@ const std::map<std::string, std::string> Operation::commandHelp = {
     {"exit", "exit - exits program"},
     {"help", "help - lists all commands"},
     {"status", "status <flight-number> - gets information about a flight"},
-    {"depart", "depart <icao> - lists flights leaving from <icao>"},
+    {"depart", "depart <icao> - lists flights leaving to <icao>"},
     {"arrive", "arrive <icao> - lists flights leaving from <icao>"},
     {"passengers", "passengers <flight-number> - lists number of passengers on the plane"},
-    {"list", "list - lists every active flight"}
+    {"list", "list - lists every active flight"},
+    {"delay", "delay <flight-number> <\"hh:mm:ss\"> - lists every active flight"}
 };
 
 // command implementation
@@ -291,8 +297,7 @@ error_t Operation::addCargo(const API& api, const std::list<std::string>& args) 
     }
     std::cout.flush();
     return Error::SUCCESS;
-}
-}  
+} 
 
 // Function: List all active flights in chronological order → returns list of flights in chronological order
 // args = {flight-number, departure, arrival, gate, airplane, destination(ICAO), origin(ICAO), airline}
@@ -340,6 +345,34 @@ error_t Operation::list(const API& api) {
     return Error::SUCCESS;
 } 
 
+error_t Operation::delay(const API& api, const std::list<std::string>& args) {
+    if(args.empty()) return Error::BADARGS;
 
+    auto it = args.begin();
 
+    std::string flightNum = *it;
+    if(!isValidFlightNum(flightNum)) return Error::BADARGS;
+    std::string delay = *(++it);
+    if(!isValidTime(delay)) return Error::BADARGS;
 
+    pqxx::connection connection = api.begin();
+    pqxx::work query(connection);
+
+    connection.prepare(
+        "delay_flight",
+        "UPDATE flight "
+        "SET " 
+           "departure_time = ((SELECT departure_time FROM flight WHERE flight_number = $1)::TIMESTAMP + $2), " 
+            "arrival_time = ((SELECT arrival_time FROM flight WHERE flight_number = $1)::TIMESTAMP + $2) "
+        "WHERE flight_number = $1"
+        ";"
+    );
+
+    auto result = query.exec_prepared("delay_flight", flightNum, delay);
+    if(result.affected_rows() != 1) return Error::DBERROR;  
+    query.commit();
+
+    std::cout << "Flight " << flightNum << " delayed by " << delay << std::endl;
+    return Error::SUCCESS;
+
+}
