@@ -411,6 +411,7 @@ error_t Operation::meals(const API& api, const std::list<std::string>& args) {
         "SELECT MealType.name "
         "FROM MealToFlight "
             "JOIN MealType ON (MealToFlight.meal_id = MealType.id) "
+            "JOIN StatusType ON (StatusType.id = MealToFlight.flight_id) "
         "WHERE MealToFlight.flight_id = (SELECT id FROM flight WHERE flight_number = $1) "
             "AND " 
             "("
