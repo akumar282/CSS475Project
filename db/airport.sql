@@ -238,18 +238,18 @@ COPY CountryType(id, name) FROM stdin;
 SELECT setval('countrytype_id_seq', 2);
 
 COPY StateType(id, name, country_id) FROM stdin;
-1	Los Angeles	1
-2	Seattle	1
+1	Michigan	1
+2	Washington	1
 3	New York	1
-4	Detroit	1
+4	California	1
 \.
 SELECT setval('statetype_id_seq', 5);
 
 COPY CityType(id, name, state_id) FROM stdin;
-1	Los Angeles	1
+1	Detroit	1
 2	Seattle	2
-3	New York	3
-4	Detroit	4
+3	New York City	3
+4	Los Angeles	4
 \.
 SELECT setval('locationtype_id_seq', 5);
 
