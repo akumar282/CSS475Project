@@ -316,30 +316,33 @@ error_t Operation::list(const API& api) {
     
     connection.prepare(
         "all_flights",
-        "SELECT * "
+        "SELECT flight_number, departure_time, arrival_time, GateType.gate_number, TerminalType.letter, " 
+        "StatusType.name, c1.name AS destination, c2.name AS origin, AirlineType.name "
         "FROM Flight "
-        "JOIN StatusType ON (Flight.status_id = StatusType.id) "
-        "WHERE (StatusType.name NOT LIKE 'Arrived' "
-            "AND StatusType.name NOT LIKE 'Cancelled') "
-        "ORDER BY departure_time DESC "
+            "JOIN StatusType ON (Flight.status_id = StatusType.id) "
+            "JOIN GateType ON (Flight.gate_id = GateType.id) "
+            "JOIN TerminalType ON (GateType.terminal_id = TerminalType.id) "
+            "JOIN LocationType ON (LocationType.id = Flight.destination_id OR LocationType.id = Flight.origin_id) "
+            "JOIN CityType c1 ON (LocationType.city_id = c1.id) "
+            "JOIN CityType c2 ON (LocationType.city_id = c2.id) "
+            "JOIN AirlineType ON (Flight.airline_id = AirlineType.id) "
+        "WHERE (StatusType.name NOT LIKE 'Arrived') "
+        "ORDER BY departure_time "
         ";"
     );
-
     auto rows = query.exec_prepared("all_flights");
     
-    std::cout << "Flight Number\tDeparture Time\tArrival Time\tNumber of Passengers\tGate ID\tStatus ID\tAirplane ID\tDestination\tOrigin ID\tAirline\n";
-
+    std::cout << "Flight Number\tDeparture Time\tArrival Time\tGate\tTerminal\tStatus\tDestination\tOrigin\tAirline\n";
     for(auto it = rows.begin(); it != rows.end(); ++it) {
-        std::cout   << it[1].as<std::string>()    << '\t'
+        std::cout   << it[0].as<std::string>()    << '\t'
+                    << it[1].as<std::string>()    << '\t'
                     << it[2].as<std::string>()    << '\t'
                     << it[3].as<std::string>()    << '\t'
                     << it[4].as<std::string>()    << '\t'
                     << it[5].as<std::string>()    << '\t'
                     << it[6].as<std::string>()    << '\t'
                     << it[7].as<std::string>()    << '\t'
-                    << it[8].as<std::string>()    << '\t'
-                    << it[9].as<std::string>()    << '\t'
-                    << it[10].as<std::string>()   << '\n';
+                    << it[8].as<std::string>()    << '\n';
     }
     std::cout.flush();  
     return Error::SUCCESS;

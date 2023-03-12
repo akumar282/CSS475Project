@@ -2,7 +2,7 @@
 
 // default connections
 const std::string API::host = "localhost";
-const std::string API::port = "5432";
+const std::string API::port = "5433";
 const std::string API::dbname = "airport";
 const std::string API::connect_timeout = "1";
 
