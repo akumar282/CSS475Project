@@ -1,0 +1,4 @@
+status AL001
+create AA1234 "2021-03-01 12:00:00" "2021-03-01 14:00:00" A3 "Boeing 787" KLAX KJFK "American Airlines"
+depart KSEA
+arrive KLAX

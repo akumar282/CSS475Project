@@ -42,7 +42,6 @@ Command Shell::fetchCommand() {
         // valid command
         if(Operation::commandList.find(command) != Operation::commandList.end()) {
             std::list<std::string> args;
-            // create AA1234 "2021-03-01 12:00:00" "2021-03-01 14:00:00" A3 "Boeing 787" KLAX KJFK "American Airlines"
 
             std::regex re("\"[^\"]*\"|\\S+");
 
