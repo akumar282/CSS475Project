@@ -42,11 +42,22 @@ Command Shell::fetchCommand() {
         // valid command
         if(Operation::commandList.find(command) != Operation::commandList.end()) {
             std::list<std::string> args;
-            std::string arg;
-            while(std::getline(ss, arg, ' ')) {
-                if(arg == "\n" || arg == "") continue;
-                args.push_back(arg);
+            // create AA1234 "2021-03-01 12:00:00" "2021-03-01 14:00:00" A3 "Boeing 787" KLAX KJFK "American Airlines"
+
+            std::regex re("\"[^\"]*\"|\\S+");
+
+            std::sregex_iterator it(input.begin(), input.end(), re);
+            std::sregex_iterator end;
+
+            while (it != end) {
+                std::string str = it->str();
+                if (str.front() == '"' && str.back() == '"') {
+                    str = str.substr(1, str.length() - 2);
+                }
+                args.push_back(str);
+                ++it;
             }
+            args.pop_front();
             return Command(command, args);
         }
         // invalid command

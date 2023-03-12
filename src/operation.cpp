@@ -106,22 +106,18 @@ error_t Operation::create(const API& api, const std::list<std::string>& args) {
     std::string flightNum = *it;
     if(!isValidFlightNum(flightNum)) {return Error::BADARGS;}
     std::string departure = *(++it);
-    departure += " " + *(++it);
     std::string arrival = *(++it);
-    arrival += " " + *(++it);
     if(!isValidDateTime(departure) || !isValidDateTime(arrival)) {return Error::BADARGS;}
     std::string gate = *(++it);
     if(!isValidGate(gate)) {return Error::BADARGS;}
     std::string airplane = *(++it);
-    airplane += " " + *(++it);
     if(!isValidAirplane(airplane)) {return Error::BADARGS;}
     std::string destination = *(++it);
     std::string origin = *(++it); 
     if(!isValidICAO(destination) || !isValidICAO(origin)) {return Error::BADARGS;}
     std::string airline = *(++it);
-    airline += " " + *(++it);
     if(!isValidAirline(airline)) {return Error::BADARGS;}
-    auto Terminal = gate.substr(0, 1);
+    auto terminal = gate.substr(0, 1);
     auto gateNum = gate.substr(1, gate.length()-1);
     pqxx::connection connection = api.begin();
     pqxx::work query(connection);
@@ -156,7 +152,7 @@ error_t Operation::create(const API& api, const std::list<std::string>& args) {
         "(SELECT id FROM LocationType WHERE LocationType.icao = $8 ), "
         "(SELECT id FROM AirlineType WHERE AirlineType.name = $9 ));  "
     );
-    auto result = query.exec_prepared("CreateFlight", flightNum, departure, arrival, Terminal, gateNum, airplane, destination, origin, airline);
+    auto result = query.exec_prepared("CreateFlight", flightNum, departure, arrival, terminal, gateNum, airplane, destination, origin, airline);
     if (result.affected_rows() == 0) {
         return Error::BADARGS;
     }
