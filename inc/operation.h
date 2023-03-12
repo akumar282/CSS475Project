@@ -22,7 +22,8 @@ public:
     static constexpr operation_t c_depart = 4;
     static constexpr operation_t c_arrive = 5;
     static constexpr operation_t c_passengers = 6;
-    static constexpr operation_t c_list = 7;
+    static constexpr operation_t c_passengers = 7;
+    static constexpr operation_t c_list = 8;
 
     
 
@@ -34,6 +35,7 @@ public:
     static error_t depart(const API&, const std::list<std::string>&);
     static error_t arrive(const API&, const std::list<std::string>&);
     static error_t passengers(const API&, const std::list<std::string>&);
+    static error_t addCargo(const API&, const std::list<std::string>&);
     static error_t list(const API&);
 
     

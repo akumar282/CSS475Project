@@ -126,7 +126,7 @@ error_t Operation::create(const API& api, const std::list<std::string>& args) {
     pqxx::connection connection = api.begin();
     pqxx::work query(connection);
 
-    connection.prepare( "CheckDup",
+    connection.prepare("CheckDup",
     "SELECT COUNT(*) "
     "FROM Flight "
     "JOIN StatusType ON (Flight.status_id = StatusType.id) "
@@ -139,7 +139,7 @@ error_t Operation::create(const API& api, const std::list<std::string>& args) {
         // duplicate flight number
         return Error::DBERROR;
     }
-    connection.prepare( "CreateFlight",
+    connection.prepare("CreateFlight",
     "INSERT INTO Flight(id, flight_number, departure_time, arrival_time, num_passengers, gate_id, status_id, airplane_id, destination_id, origin_id, airline_id) "
     "VALUES ((SELECT NEXTVAL('flight_id_seq')),"
         "$1 , " 
@@ -177,7 +177,13 @@ error_t Operation::depart(const API& api, const std::list<std::string>& args) {
         "SELECT flight_number, destination.icao FROM flight "
             "JOIN LocationType AS origin ON (flight.origin_id = origin.id) "
             "JOIN LocationType AS destination ON (flight.destination_id = destination.id) "
-        "WHERE origin.icao = $1"
+            "JOIN StatusType ON (flight.status_id = StatusType.id) "
+        "WHERE origin.icao = $1 "
+            "AND " 
+            "("
+                "StatusType.name NOT LIKE 'Arrived'"
+                    "AND StatusType.name NOT LIKE 'Cancelled'"
+            ")"
         ";"
     );
 
@@ -198,12 +204,17 @@ error_t Operation::arrive(const API& api, const std::list<std::string>& args) {
     pqxx::work query(connection);
 
     connection.prepare(
-        "get_destinations",
+        "get_arrivals",
         "SELECT flight_number, origin.icao FROM flight "
             "JOIN LocationType AS origin ON (flight.origin_id = origin.id) "
             "JOIN LocationType AS destination ON (flight.destination_id = destination.id) "
+            "JOIN StatusType ON (flight.status_id = StatusType.id) "
         "WHERE destination.icao = $1"
-            "AND "
+            "AND " 
+            "("
+                "StatusType.name NOT LIKE 'Arrived'"
+                    "AND StatusType.name NOT LIKE 'Cancelled'"
+            ")"
         ";"
     );
 
@@ -242,6 +253,35 @@ error_t Operation::passengers(const API& api, const std::list<std::string>& args
     }
     std::cout.flush();  
     return Error::SUCCESS;
+}
+
+error_t Operation::addCargo(const API& api, const std::list<std::string>& args) {
+    if(args.size() != 2) return Error::BADARGS;
+    std::string flightNum = args.front();
+    if(!isValidFlightNum(flightNum)) return Error::BADARGS;
+    std::string cargo = *(++args.begin());
+    
+    // flight number was specified and is valid
+    pqxx::connection connection = api.begin();
+    pqxx::work query(connection);
+    
+    connection.prepare(
+        "add_cargo",
+        "INSERT INTO Cargo(id, flight_id, weight_lb)"
+        "VALUES ((SELECT NEXTVAL('cargo_id_seq')),"
+        "(SELECT id FROM Flight WHERE flight_number = $1),"
+        "$2)"
+      ";"
+    );
+
+    auto rows = query.exec_prepared("add_cargo", cargo, flightNum);
+
+    for (auto it = rows.begin(); it != rows.end(); ++it) {
+        std::cout << it[0].as<std::string>() << '\n';
+    }
+    std::cout.flush();
+    return Error::SUCCESS;
+}
 }  
 
 // Function: List all active flights in chronological order → returns list of flights in chronological order
