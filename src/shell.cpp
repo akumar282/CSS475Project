@@ -91,6 +91,9 @@ error_t Shell::executeCommand(const Command& c) {
     case Operation::c_arrive : {
         return Operation::arrive(this->getAPI(), c.getArgs());
     }
+    case Operation::c_passengers : {
+        return Operation::passengers(this->getAPI(), c.getArgs());
+    }
     default : {
         return Error::BADCMD;
     }

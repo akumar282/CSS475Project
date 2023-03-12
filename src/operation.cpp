@@ -36,7 +36,8 @@ const std::map<std::string, operation_t> Operation::commandList = {
     {"status", Operation::c_status},
     {"create", Operation::c_create},
     {"depart", Operation::c_depart},
-    {"arrive", Operation::c_arrive}
+    {"arrive", Operation::c_arrive},
+    {"passengers", Operation::c_passengers},
 };
 
 //maps keyword to its corresponding help message
@@ -45,7 +46,8 @@ const std::map<std::string, std::string> Operation::commandHelp = {
     {"help", "help - lists all commands"},
     {"status", "status <flight-number> - gets information about a flight"},
     {"depart", "depart <icao> - lists flights leaving from <icao>"},
-    {"arrive", "arrive <icao> - lists flights leaving from <icao>"}
+    {"arrive", "arrive <icao> - lists flights leaving from <icao>"},
+    {"passengers", "passengers <flight-number> - lists number of passengers on the plane"}
 };
 
 // command implementation
@@ -211,3 +213,31 @@ error_t Operation::arrive(const API& api, const std::list<std::string>& args) {
     std::cout.flush();  
     return Error::SUCCESS;
 }
+
+// Function: Return number of passengers on plane → returns the number of passengers
+//
+error_t Operation::passengers(const API& api, const std::list<std::string>& args) {
+    // #TODO add rest of get plane info here:
+    if(args.empty()) return Error::BADARGS;
+    std::string flightNum = args.front();
+    if(!isValidFlightNum(flightNum)) return Error::BADARGS;
+    
+    // flight number was specified and is valid
+    pqxx::connection connection = api.begin();
+    pqxx::work query(connection);
+    
+    connection.prepare(
+        "total_passengers",
+        "SELECT num_passengers FROM flight "
+        "WHERE flight_number = $1"
+        ";"
+    );
+
+    auto rows = query.exec_prepared("total_passengers", flightNum);
+    
+    for(auto it = rows.begin(); it != rows.end(); ++it) {
+        std::cout << it[0].as<std::string>() << '\n';
+    }
+    std::cout.flush();  
+    return Error::SUCCESS;
+}   
