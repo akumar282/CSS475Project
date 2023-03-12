@@ -3,7 +3,7 @@
 // arguement validation
 
 static bool isValidFlightNum(const std::string& flightNum) {
-    const std::regex validFlightNumber("[A-Z]{2}[0-9]{3,4}");
+    const std::regex validFlightNumber("[A-Z]{2}[0-9]{2,4}");
     return std::regex_match(flightNum, validFlightNumber);
 }
 static bool isValidDateTime(const std::string& time) {
@@ -77,21 +77,30 @@ error_t Operation::status(const API& api, const std::list<std::string>& args) {
     pqxx::work query(connection);
     
     // we could abstract this out; not sure
-    std::string queryString = 
-    "SELECT name "
-    "FROM flight "
+    connection.prepare(
+    "get_flight",
+    "SELECT flight_number, departure_time, arrival_time, num_passengers, letter, gate_number, statustype.name, airplanetype.name, airlinetype.name, origin.icao, destination.icao " 
+    "FROM flight " 
+        "JOIN gatetype ON (flight.gate_id = gatetype.id) "
+        "JOIN terminaltype ON (gatetype.terminal_id = terminaltype.id)"
         "JOIN statustype ON (flight.status_id = statustype.id) "
-    "WHERE flight_number = \'"
-    + flightNum + "\' ;";
-    pqxx::row row;
-    try {  
-        row = query.exec1(queryString);
-    }
-    catch(const std::exception& e) {
-        // could not find
-    }
-
-    std::cout << row.at(0).as<std::string>() << std::endl;
+        "JOIN airplanetype ON (flight.airplane_id = airplanetype.id) "
+        "JOIN airlinetype ON (flight.airline_id = airlinetype.id) "
+        "JOIN locationtype AS origin ON (flight.origin_id = origin.id) "
+        "JOIN locationtype AS destination ON (flight.destination_id = destination.id) "
+    "WHERE flight_number = $1 "
+        "AND" 
+    "("
+        "StatusType.name NOT LIKE 'Arrived'"
+            "AND StatusType.name NOT LIKE 'Cancelled'"
+    ")"
+    );
+    // flight_number, departure_time, arrival_time, num_passengers, letter, gate_number, statustype.name, airplanetype.name, airlinetype.name, origin.icao, destination.icao
+    // 0              1               2             3               4       5            6                7                  8                 9            10
+    auto rows = query.exec_prepared1("get_flight", flightNum);
+    std::cout << "Flight " << rows[0] << " from " << rows[9] << " to " << rows[10] << " is " << rows[6] << '\n';
+    std::cout << "Expected departure at " << rows[1] << " and arrives at " << rows[2] << '\n';
+    std::cout << "Flight uses a(n) " << rows[7] << " with " << rows[8] << '\n';  
 
     return Error::SUCCESS;
 }   
