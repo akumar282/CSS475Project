@@ -3,12 +3,16 @@
 // arguement validation
 
 static bool isValidFlightNum(const std::string& flightNum) {
-    const std::regex validFlightNumber("[A-Z]{2}[0-9]{3,4}");
+    const std::regex validFlightNumber("[A-Z]{2}[0-9]{2,4}");
     return std::regex_match(flightNum, validFlightNumber);
 }
-static bool isValidDateTime(const std::string& time) {
+static bool isValidDateTime(const std::string& dateTime) {
     const std::regex validDateTime("[0-9]{4}-[0-9]{2}-[0-9]{2} [0-9]{2}:[0-9]{2}:[0-9]{2}");
-    return std::regex_match(time, validDateTime);
+    return std::regex_match(dateTime, validDateTime);
+}
+static bool isValidTime(const std::string& time) {
+    const std::regex validTime("^(?:[01][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9](?:\\.[0-9]{1,3})?$");
+    return std::regex_match(time, validTime);
 }
 static bool isValidICAO(const std::string& icao) {
     const std::regex validICAO("[A-Z]{4}");
@@ -38,6 +42,8 @@ const std::map<std::string, operation_t> Operation::commandList = {
     {"depart", Operation::c_depart},
     {"arrive", Operation::c_arrive},
     {"passengers", Operation::c_passengers},
+    {"list", Operation::c_list},
+    {"delay", Operation::c_delay}
 };
 
 //maps keyword to its corresponding help message
@@ -45,9 +51,11 @@ const std::map<std::string, std::string> Operation::commandHelp = {
     {"exit", "exit - exits program"},
     {"help", "help - lists all commands"},
     {"status", "status <flight-number> - gets information about a flight"},
-    {"depart", "depart <icao> - lists flights leaving from <icao>"},
+    {"depart", "depart <icao> - lists flights leaving to <icao>"},
     {"arrive", "arrive <icao> - lists flights leaving from <icao>"},
-    {"passengers", "passengers <flight-number> - lists number of passengers on the plane"}
+    {"passengers", "passengers <flight-number> - lists number of passengers on the plane"},
+    {"list", "list - lists every active flight"},
+    {"delay", "delay <flight-number> <\"hh:mm:ss\"> - lists every active flight"}
 };
 
 // command implementation
@@ -77,21 +85,31 @@ error_t Operation::status(const API& api, const std::list<std::string>& args) {
     pqxx::work query(connection);
     
     // we could abstract this out; not sure
-    std::string queryString = 
-    "SELECT name "
-    "FROM flight "
+    connection.prepare(
+    "get_flight",
+    "SELECT flight_number, departure_time, arrival_time, num_passengers, letter, gate_number, statustype.name, airplanetype.name, airlinetype.name, origin.icao, destination.icao " 
+    "FROM flight " 
+        "JOIN gatetype ON (flight.gate_id = gatetype.id) "
+        "JOIN terminaltype ON (gatetype.terminal_id = terminaltype.id)"
         "JOIN statustype ON (flight.status_id = statustype.id) "
-    "WHERE flight_number = \'"
-    + flightNum + "\' ;";
-    pqxx::row row;
-    try {  
-        row = query.exec1(queryString);
-    }
-    catch(const std::exception& e) {
-        // could not find
-    }
-
-    std::cout << row.at(0).as<std::string>() << std::endl;
+        "JOIN airplanetype ON (flight.airplane_id = airplanetype.id) "
+        "JOIN airlinetype ON (flight.airline_id = airlinetype.id) "
+        "JOIN locationtype AS origin ON (flight.origin_id = origin.id) "
+        "JOIN locationtype AS destination ON (flight.destination_id = destination.id) "
+    "WHERE flight_number = $1 "
+        "AND" 
+    "("
+        "StatusType.name NOT LIKE 'Arrived'"
+            "AND StatusType.name NOT LIKE 'Cancelled'"
+    ")"
+    );
+    // flight_number, departure_time, arrival_time, num_passengers, letter, gate_number, statustype.name, airplanetype.name, airlinetype.name, origin.icao, destination.icao
+    // 0              1               2             3               4       5            6                7                  8                 9            10
+    auto rows = query.exec_prepared1("get_flight", flightNum);
+    std::cout << "Flight " << rows[0] << " from " << rows[9] << " to " << rows[10] << " is " << rows[6] << '\n';
+    std::cout << "Expected departure at " << rows[1] << " and arrives at " << rows[2] << '\n';
+    std::cout << "Flight uses a(n) " << rows[7] << " with " << rows[8] << '\n';
+    std::cout << "Flight will use gate " << rows[4] << rows[5] << " and has " << rows[3] << " passengers." << std::endl;
 
     return Error::SUCCESS;
 }   
@@ -279,6 +297,87 @@ error_t Operation::addCargo(const API& api, const std::list<std::string>& args) 
     }
     std::cout.flush();
     return Error::SUCCESS;
+}
+
+// Function: List all active flights in chronological order → returns list of flights in chronological order
+// args = {flight-number, departure, arrival, gate, airplane, destination(ICAO), origin(ICAO), airline}
+//
+error_t Operation::list(const API& api) {
+    // #TODO add rest of get plane info here:
+    /*
+    if(args.empty()) return Error::BADARGS;
+    std::string flightNum = args.front();
+    if(!isValidFlightNum(flightNum)) return Error::BADARGS;
+    */
+    
+    // flight number was specified and is valid
+    pqxx::connection connection = api.begin();
+    pqxx::work query(connection);
+    
+    connection.prepare(
+        "all_flights",
+        "SELECT flight_number, departure_time, arrival_time, GateType.gate_number, TerminalType.letter, " 
+        "StatusType.name, c1.name AS destination, c2.name AS origin, AirlineType.name "
+        "FROM Flight "
+            "JOIN StatusType ON (Flight.status_id = StatusType.id) "
+            "JOIN GateType ON (Flight.gate_id = GateType.id) "
+            "JOIN TerminalType ON (GateType.terminal_id = TerminalType.id) "
+            "JOIN LocationType ON (LocationType.id = Flight.destination_id OR LocationType.id = Flight.origin_id) "
+            "JOIN CityType c1 ON (LocationType.city_id = c1.id) "
+            "JOIN CityType c2 ON (LocationType.city_id = c2.id) "
+            "JOIN AirlineType ON (Flight.airline_id = AirlineType.id) "
+        "WHERE (StatusType.name NOT LIKE 'Arrived') "
+        "ORDER BY departure_time "
+        ";"
+    );
+    auto rows = query.exec_prepared("all_flights");
+    
+    std::cout << "Flight Number\tDeparture Time\tArrival Time\tGate\tTerminal\tStatus\tDestination\tOrigin\tAirline\n";
+    for(auto it = rows.begin(); it != rows.end(); ++it) {
+        std::cout   << it[0].as<std::string>()    << '\t'
+                    << it[1].as<std::string>()    << '\t'
+                    << it[2].as<std::string>()    << '\t'
+                    << it[3].as<std::string>()    << '\t'
+                    << it[4].as<std::string>()    << '\t'
+                    << it[5].as<std::string>()    << '\t'
+                    << it[6].as<std::string>()    << '\t'
+                    << it[7].as<std::string>()    << '\t'
+                    << it[8].as<std::string>()    << '\n';
+    }
+    std::cout.flush();  
+    return Error::SUCCESS;
+} 
+
+error_t Operation::delay(const API& api, const std::list<std::string>& args) {
+    if(args.empty()) return Error::BADARGS;
+
+    auto it = args.begin();
+
+    std::string flightNum = *it;
+    if(!isValidFlightNum(flightNum)) return Error::BADARGS;
+    std::string delay = *(++it);
+    if(!isValidTime(delay)) return Error::BADARGS;
+
+    pqxx::connection connection = api.begin();
+    pqxx::work query(connection);
+
+    connection.prepare(
+        "delay_flight",
+        "UPDATE flight "
+        "SET " 
+           "departure_time = ((SELECT departure_time FROM flight WHERE flight_number = $1)::TIMESTAMP + $2), " 
+            "arrival_time = ((SELECT arrival_time FROM flight WHERE flight_number = $1)::TIMESTAMP + $2) "
+        "WHERE flight_number = $1"
+        ";"
+    );
+
+    auto result = query.exec_prepared("delay_flight", flightNum, delay);
+    if(result.affected_rows() != 1) return Error::DBERROR;  
+    query.commit();
+
+    std::cout << "Flight " << flightNum << " delayed by " << delay << std::endl;
+    return Error::SUCCESS;
+
 }
 
 error_t Operation::checkCargo(const API& api, const std::list<std::string>& args) {

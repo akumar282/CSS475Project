@@ -146,9 +146,9 @@ CREATE TABLE Flight (
 	gate_id 		INTEGER NOT NULL,
 	status_id		INTEGER NOT NULL,
 	airplane_id 	INTEGER NOT NULL,
+	airline_id		INTEGER NOT NULL,
 	destination_id	INTEGER NOT NULL,
 	origin_id		INTEGER NOT NULL,
-	airline_id		INTEGER NOT NULL,
 	
 	PRIMARY KEY		(id),
 	FOREIGN KEY 	(gate_id) 			REFERENCES GateType(id) DEFERRABLE INITIALLY DEFERRED,
@@ -156,7 +156,9 @@ CREATE TABLE Flight (
 	FOREIGN KEY 	(airplane_id) 		REFERENCES AirplaneType(id) DEFERRABLE INITIALLY DEFERRED,
 	FOREIGN KEY 	(destination_id)	REFERENCES LocationType(id) DEFERRABLE INITIALLY DEFERRED,
 	FOREIGN KEY 	(origin_id) 		REFERENCES LocationType(id) DEFERRABLE INITIALLY DEFERRED,
-	FOREIGN KEY 	(airline_id) 		REFERENCES AirlineType(id) DEFERRABLE INITIALLY DEFERRED
+	FOREIGN KEY 	(airline_id) 		REFERENCES AirlineType(id) DEFERRABLE INITIALLY DEFERRED,
+
+	CHECK	(origin_id = 1 OR destination_id = 1)
 
 );
 
@@ -236,26 +238,27 @@ COPY CountryType(id, name) FROM stdin;
 SELECT setval('countrytype_id_seq', 2);
 
 COPY StateType(id, name, country_id) FROM stdin;
-1	Los Angeles	1
-2	Seattle	1
+1	Michigan	1
+2	Washington	1
 3	New York	1
-4	Detroit	1
+4	California	1
 \.
 SELECT setval('statetype_id_seq', 5);
 
 COPY CityType(id, name, state_id) FROM stdin;
-1	Los Angeles	1
+1	Detroit	1
 2	Seattle	2
-3	New York	3
-4	Detroit	4
+3	New York City	3
+4	Los Angeles	4
 \.
 SELECT setval('locationtype_id_seq', 5);
 
+-- KDTW is our airport
 COPY LocationType(id, city_id, icao) FROM stdin;
-1	1	KLAX
+1	1	KDTW
 2	2	KSEA
 3	3	KJFK
-4	4	KDTW
+4	4	KLAX
 \.
 SELECT setval('locationtype_id_seq', 5);
 
@@ -376,8 +379,9 @@ COPY Flight(id, flight_number, departure_time, arrival_time, num_passengers, gat
 1	AL001	2023-03-09 09:00:00	2023-03-09 16:00:00	124	8	2	2	1	2	1
 2	EK230	2023-03-09 09:00:00	2023-03-09 16:00:00	124	8	2	2	1	2	1
 3	SQ028	2023-03-09 09:00:00	2023-03-09 16:00:00	124	8	2	2	1	2	1
+4	CD024	2023-03-11 11:00:00	2023-03-11 18:00:00	230	7	4	3	3	1	1
 \.
-SELECT setval('flight_id_seq', 4);
+SELECT setval('flight_id_seq', 5);
 
 COPY MealToFlight(flight_id, meal_id) FROM stdin;
 1	1

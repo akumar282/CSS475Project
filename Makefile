@@ -19,6 +19,9 @@ stop:
 run: shell
 	bin/shell.out
 
+copy:
+	sudo cp -r ./db /var/lib/postgresql/14/main
+	
 new: start
 	sudo cp -r ./db /var/lib/postgresql/14/main
 	su - postgres
