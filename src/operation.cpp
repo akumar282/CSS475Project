@@ -60,7 +60,7 @@ const std::map<std::string, operation_t> Operation::commandList = {
     {"passengers", Operation::c_passengers},
     {"list", Operation::c_list},
     {"delay", Operation::c_delay},
-    {"mealT", Operation::c_mealT},
+    {"mealTypes", Operation::c_mealTypes},
     {"meals", Operation::c_meals},
     {"updatePassengers", Operation::c_updatePassengers}
 };
@@ -76,7 +76,8 @@ const std::map<std::string, std::string> Operation::commandHelp = {
     {"list", "list - lists every active flight"},
     {"delay", "delay <flight-number> <\"hh:mm:ss\"> - lists every active flight"},
     {"meals", "meals <flight-number> - lists all the meals on a flight"},
-    {"updatePassengers", "updatePassengers <flight-number> <+ or -> - adds (+) or subtracts (-) passengers from the flight"}
+    {"mealTypes", "mealTypes <flight-number> - lists all the categories of meals on a flight"},
+    {"updatePassengers", "updatePassengers <flight-number> <+/-n> - adds (+) or subtracts (-) \'n\' passengers from the flight"}
 };
 
 // command implementation
@@ -126,7 +127,16 @@ error_t Operation::status(const API& api, const std::list<std::string>& args) {
     );
     // flight_number, departure_time, arrival_time, num_passengers, letter, gate_number, statustype.name, airplanetype.name, airlinetype.name, origin.icao, destination.icao
     // 0              1               2             3               4       5            6                7                  8                 9            10
-    auto rows = query.exec_prepared1("get_flight", flightNum);
+    
+    pqxx::row rows;
+    try {
+        rows = query.exec_prepared1("get_flight", flightNum);
+    }
+    catch (const std::exception& e) {
+        std::cerr << e.what() << std::endl;
+        return Error::DBERROR;
+    }
+    
     std::cout << "Flight " << rows[0] << " from " << rows[9] << " to " << rows[10] << " is " << rows[6] << '\n';
     std::cout << "Expected departure at " << rows[1] << " and arrives at " << rows[2] << '\n';
     std::cout << "Flight uses a(n) " << rows[7] << " with " << rows[8] << '\n';
@@ -162,6 +172,7 @@ error_t Operation::create(const API& api, const std::list<std::string>& args) {
     auto gateNum = gate.substr(1, gate.length()-1);
     pqxx::connection connection = api.begin();
     pqxx::work query(connection);
+
     connection.prepare("CreateFlight",
     "INSERT INTO Flight(id, flight_number, departure_time, arrival_time, num_passengers, gate_id, status_id, airplane_id, destination_id, origin_id, airline_id) "
     "VALUES ((SELECT NEXTVAL('flight_id_seq')),"
@@ -179,8 +190,21 @@ error_t Operation::create(const API& api, const std::list<std::string>& args) {
         "(SELECT id FROM LocationType WHERE LocationType.icao = $8 ), "
         "(SELECT id FROM AirlineType WHERE AirlineType.name = $9 ));  "
     );
-    auto result = query.exec_prepared("CreateFlight", flightNum, departure, arrival, terminal, gateNum, airplane, destination, origin, airline);
+
+    pqxx::result result;
+
+    try
+    {    
+        auto result = query.exec_prepared("CreateFlight", flightNum, departure, arrival, terminal, gateNum, airplane, destination, origin, airline);
+    }
+    catch(const std::exception& e)
+    {
+        std::cerr << e.what() << std::endl;
+        return Error::DBERROR;
+    }
+    
     if (result.affected_rows() == 0) {
+        std::cerr << "Flight " << flightNum << " already exists." << std::endl;
         return Error::BADARGS;
     }
     std::cout << "Flight " << flightNum << " created." << std::endl; 
@@ -211,8 +235,18 @@ error_t Operation::depart(const API& api, const std::list<std::string>& args) {
         ";"
     );
 
-    auto rows = query.exec_prepared("get_destinations", icao);
+    pqxx::result rows;
 
+    try
+    {
+        rows = query.exec_prepared("get_destinations", icao);
+    }
+    catch(const std::exception& e)
+    {
+        std::cerr << e.what() << std::endl;
+        return Error::DBERROR;
+    }
+    
     for(auto it = rows.begin(); it != rows.end(); ++it) {
         std::cout << "Flight " << it[0].as<std::string>() << " to " << it[1].as<std::string>() << '\n';
     }
@@ -242,7 +276,17 @@ error_t Operation::arrive(const API& api, const std::list<std::string>& args) {
         ";"
     );
 
-    auto rows = query.exec_prepared("get_arrivals", icao);
+    pqxx::result rows;
+    
+    try
+    {    
+        rows = query.exec_prepared("get_arrivals", icao);
+    }
+    catch (const std::exception& e)
+    {
+        std::cerr << e.what() << std::endl;
+        return Error::DBERROR;
+    }
 
     for(auto it = rows.begin(); it != rows.end(); ++it) {
         std::cout << "Flight " << it[0].as<std::string>() << " from " << it[1].as<std::string>() << '\n';
@@ -270,7 +314,16 @@ error_t Operation::passengers(const API& api, const std::list<std::string>& args
         ";"
     );
 
-    auto rows = query.exec_prepared("total_passengers", flightNum);
+    pqxx::result rows;
+    try
+    {    
+        rows = query.exec_prepared("total_passengers", flightNum);
+    }
+    catch (const std::exception& e)
+    {
+        std::cerr << e.what() << std::endl;
+        return Error::DBERROR;
+    }
     
     for(auto it = rows.begin(); it != rows.end(); ++it) {
         std::cout << it[0].as<std::string>() << '\n';
@@ -298,7 +351,16 @@ error_t Operation::addCargo(const API& api, const std::list<std::string>& args) 
       ";"
     );
 
-    auto rows = query.exec_prepared("add_cargo", cargo, flightNum);
+    pqxx::result rows; 
+    try
+    {    
+        rows = query.exec_prepared("add_cargo", cargo, flightNum);
+    }
+    catch (const std::exception& e)
+    {
+        std::cerr << e.what() << std::endl;
+        return Error::DBERROR;
+    }
 
     for (auto it = rows.begin(); it != rows.end(); ++it) {
         std::cout << it[0].as<std::string>() << '\n';
@@ -339,7 +401,16 @@ error_t Operation::list(const API& api) {
         "ORDER BY departure_time "
         ";"
     );
-    auto rows = query.exec_prepared("all_flights");
+    pqxx::result rows;
+    try
+    {    
+        rows = query.exec_prepared("all_flights");
+    }
+    catch (const std::exception& e)
+    {
+        std::cerr << e.what() << std::endl;
+        return Error::DBERROR;
+    }
     
     std::cout << std::right << std::setw(10) << "Flight #" 
           << std::right << std::setw(24) << "Departure Time" 
@@ -394,7 +465,17 @@ error_t Operation::delay(const API& api, const std::list<std::string>& args) {
         ";"
     );
 
-    auto result = query.exec_prepared("delay_flight", flightNum, delay);
+    pqxx::result result;
+    try
+    {
+        result = query.exec_prepared("delay_flight", flightNum, delay);
+    }
+    catch (const std::exception& e)
+    {
+        std::cerr << e.what() << std::endl;
+        return Error::DBERROR;
+    }
+
     if(result.affected_rows() != 1) return Error::DBERROR;  
     query.commit();
 
@@ -427,7 +508,16 @@ error_t Operation::meals(const API& api, const std::list<std::string>& args) {
         ";"
     );
 
-    auto rows = query.exec_prepared("getMeals", flightNum);
+    pqxx::result rows;
+    try
+    {
+        rows = query.exec_prepared("getMeals", flightNum);
+    }
+    catch (const std::exception& e)
+    {
+        std::cerr << e.what() << std::endl;
+        return Error::DBERROR;
+    }
 
     for (auto it = rows.begin(); it != rows.end(); ++it) {
         std::cout << it[0].as<std::string>() << '\n';
@@ -454,7 +544,16 @@ error_t Operation::checkCargo(const API& api, const std::list<std::string>& args
         ";"
     );
 
-    auto rows = query.exec_prepared("check_cargo", cargo, flightNum);
+    pqxx::result rows;
+    try
+    {
+        rows = query.exec_prepared("check_cargo", flightNum);
+    }
+    catch (const std::exception& e)
+    {
+        std::cerr << e.what() << std::endl;
+        return Error::DBERROR;
+    }
 
     for (auto it = rows.begin(); it != rows.end(); ++it) {
         std::cout << it[0].as<std::string>() << '\n';
@@ -481,7 +580,16 @@ error_t Operation::mealsOffered(const API& api, const std::list<std::string>& ar
     "ORDER BY MealCategoryType.category; "
     );
 
-    auto rows = query.exec_prepared("CheckMealType", flightNum);
+    pqxx::result rows;
+    try
+    {
+        rows = query.exec_prepared("CheckMealType", flightNum);
+    }
+    catch (const std::exception& e)
+    {
+        std::cerr << e.what() << std::endl;
+        return Error::DBERROR;
+    }
     query.commit();
 
     for (auto it = rows.begin(); it != rows.end(); ++it) {
@@ -512,15 +620,20 @@ error_t Operation::updatePassengers(const API& api, const std::list<std::string>
         "WHERE flight_number = $2 AND (num_passengers + $1) > 0 AND (num_passengers + $1) < (SELECT max_capacity FROM AirplaneType WHERE id = Flight.airplane_id); "
     );
 
-    auto rows = query.exec_prepared("update_passengers", numPassengers, flightNum);
+    pqxx::result rows;
+    try
+    {
+        rows = query.exec_prepared("update_passengers", numPassengers, flightNum);
+    }
+    catch (const std::exception& e)
+    {
+        std::cerr << e.what() << std::endl;
+        return Error::DBERROR;
+    }
     query.commit();
 
     std::list<std::string> first_two_args{args.begin(), std::next(args.begin(), 2)};
     Operation::passengers(api, first_two_args);
 
-
     return Error::SUCCESS;
 }
-
-
-

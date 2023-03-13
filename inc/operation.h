@@ -25,7 +25,7 @@ public:
     static constexpr operation_t c_list = 7;
     static constexpr operation_t c_delay = 8;
     static constexpr operation_t c_meals = 9;
-    static constexpr operation_t c_mealT= 10;
+    static constexpr operation_t c_mealTypes= 10;
     static constexpr operation_t c_updatePassengers = 11;
 
     // operation functions

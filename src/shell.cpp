@@ -99,7 +99,7 @@ error_t Shell::executeCommand(const Command& c) {
     case Operation::c_delay : {
         return Operation::delay(this->getAPI(), c.getArgs());
     }
-    case Operation::c_mealT : {
+    case Operation::c_mealTypes : {
         return Operation::mealsOffered(this->getAPI(), c.getArgs());
     }
     case Operation::c_meals : {
