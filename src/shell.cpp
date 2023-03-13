@@ -105,9 +105,6 @@ error_t Shell::executeCommand(const Command& c) {
     case Operation::c_meals : {
         return Operation::meals(this->getAPI(), c.getArgs());
     }
-    case Operation::c_updatePassengers : {
-        return Operation::updatePassengers(this->getAPI(), c.getArgs());
-    }
     default : {
         return Error::BADCMD;
     }

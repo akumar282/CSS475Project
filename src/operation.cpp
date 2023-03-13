@@ -61,8 +61,7 @@ const std::map<std::string, operation_t> Operation::commandList = {
     {"list", Operation::c_list},
     {"delay", Operation::c_delay},
     {"mealTypes", Operation::c_mealTypes},
-    {"meals", Operation::c_meals},
-    {"updatePassengers", Operation::c_updatePassengers}
+    {"meals", Operation::c_meals}
 };
 
 //maps keyword to its corresponding help message
@@ -72,12 +71,11 @@ const std::map<std::string, std::string> Operation::commandHelp = {
     {"status", "status <flight-number> - gets information about a flight"},
     {"depart", "depart <icao> - lists flights leaving to <icao>"},
     {"arrive", "arrive <icao> - lists flights leaving from <icao>"},
-    {"passengers", "passengers <flight-number> - lists number of passengers on the plane"},
+    {"passengers", "passengers <flight-number> <+/-n> - adds (+) or subtracts (-) \'n\' passengers from the flight"},
     {"list", "list - lists every active flight"},
     {"delay", "delay <flight-number> <\"hh:mm:ss\"> - lists every active flight"},
     {"meals", "meals <flight-number> - lists all the meals on a flight"},
-    {"mealTypes", "mealTypes <flight-number> - lists all the categories of meals on a flight"},
-    {"updatePassengers", "updatePassengers <flight-number> <+/-n> - adds (+) or subtracts (-) \'n\' passengers from the flight"}
+    {"mealTypes", "mealTypes <flight-number> - lists all the categories of meals on a flight"}
 };
 
 // command implementation
@@ -290,43 +288,6 @@ error_t Operation::arrive(const API& api, const std::list<std::string>& args) {
 
     for(auto it = rows.begin(); it != rows.end(); ++it) {
         std::cout << "Flight " << it[0].as<std::string>() << " from " << it[1].as<std::string>() << '\n';
-    }
-    std::cout.flush();  
-    return Error::SUCCESS;
-}
-
-// Function: Return number of passengers on plane → returns the number of passengers
-//
-error_t Operation::passengers(const API& api, const std::list<std::string>& args) {
-    // #TODO add rest of get plane info here:
-    if(args.empty()) return Error::BADARGS;
-    std::string flightNum = args.front();
-    if(!isValidFlightNum(api, flightNum)) return Error::BADARGS;
-    
-    // flight number was specified and is valid
-    pqxx::connection connection = api.begin();
-    pqxx::work query(connection);
-    
-    connection.prepare(
-        "total_passengers",
-        "SELECT num_passengers FROM flight "
-        "WHERE flight_number = $1"
-        ";"
-    );
-
-    pqxx::result rows;
-    try
-    {    
-        rows = query.exec_prepared("total_passengers", flightNum);
-    }
-    catch (const std::exception& e)
-    {
-        std::cerr << e.what() << std::endl;
-        return Error::DBERROR;
-    }
-    
-    for(auto it = rows.begin(); it != rows.end(); ++it) {
-        std::cout << it[0].as<std::string>() << '\n';
     }
     std::cout.flush();  
     return Error::SUCCESS;
@@ -599,16 +560,15 @@ error_t Operation::mealsOffered(const API& api, const std::list<std::string>& ar
 }
 
 
-error_t Operation::updatePassengers(const API& api, const std::list<std::string>& args) {
-    if (args.size() != 3) return Error::BADARGS;
+error_t Operation::passengers(const API& api, const std::list<std::string>& args) {
+    if (args.size() != 2) return Error::BADARGS;
 
-    std::string flightNum = args.front();
+    auto it = args.begin();
+
+    std::string flightNum = *(it);
     if (!isValidFlightNum(api, flightNum)) return Error::BADARGS;
     
-
-    std::string sign = args.front();
-
-    int numPassengers = (sign == "+") ? 1 : -1;
+    std::string numPassengers = *(++it);
 
     pqxx::connection connection = api.begin();
     pqxx::work query(connection);
@@ -617,7 +577,14 @@ error_t Operation::updatePassengers(const API& api, const std::list<std::string>
         "update_passengers",
         "UPDATE Flight "
         "SET num_passengers = num_passengers + $1 "
-        "WHERE flight_number = $2 AND (num_passengers + $1) > 0 AND (num_passengers + $1) < (SELECT max_capacity FROM AirplaneType WHERE id = Flight.airplane_id); "
+        "WHERE flight_number = $2 AND (num_passengers + $1) > 0 AND (num_passengers + $1) < (SELECT max_passengers FROM AirplaneType WHERE id = Flight.airplane_id); "
+    );
+
+    connection.prepare(
+        "get_passengers",
+        "SELECT num_passengers FROM flight "
+        "WHERE flight_number = $1"
+        ";"
     );
 
     pqxx::result rows;
@@ -630,10 +597,27 @@ error_t Operation::updatePassengers(const API& api, const std::list<std::string>
         std::cerr << e.what() << std::endl;
         return Error::DBERROR;
     }
+
+    if(rows.affected_rows() != 1) {
+        std::cout << "Error: Could not update passengers." << std::endl;
+        return Error::DBERROR;
+    }
+
     query.commit();
 
-    std::list<std::string> first_two_args{args.begin(), std::next(args.begin(), 2)};
-    Operation::passengers(api, first_two_args);
+    try
+    {    
+        rows = query.exec_prepared("get_passengers", flightNum);
+    }
+    catch (const std::exception& e)
+    {
+        std::cerr << e.what() << std::endl;
+        return Error::DBERROR;
+    }
+    
+    for(auto it = rows.begin(); it != rows.end(); ++it) {
+         std::cout << "Flight now has " << it[0].as<std::string>() << " passengers." << std::endl;
+    }
 
     return Error::SUCCESS;
 }

@@ -158,7 +158,9 @@ CREATE TABLE Flight (
 	FOREIGN KEY 	(origin_id) 		REFERENCES LocationType(id) DEFERRABLE INITIALLY DEFERRED,
 	FOREIGN KEY 	(airline_id) 		REFERENCES AirlineType(id) DEFERRABLE INITIALLY DEFERRED,
 
-	CHECK	(origin_id = 1 OR destination_id = 1)
+	CHECK	(origin_id = 1 OR destination_id = 1),
+	CHECK	(num_passengers >= 0)
+
 
 );
 
