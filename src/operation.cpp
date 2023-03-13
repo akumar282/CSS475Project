@@ -174,12 +174,11 @@ error_t Operation::create(const API& api, const std::list<std::string>& args) {
     pqxx::work query(connection);
 
     connection.prepare("CreateFlight",
-    "INSERT INTO Flight(id, flight_number, departure_time, arrival_time, num_passengers, gate_id, status_id, airplane_id, destination_id, origin_id, airline_id) "
+    "INSERT INTO Flight(id, flight_number, departure_time, arrival_time, gate_id, status_id, airplane_id, destination_id, origin_id, airline_id) "
     "VALUES ((SELECT NEXTVAL('flight_id_seq')),"
         "$1 , " 
         "$2 , " 
         "$3 , "
-        "0 , "
         "(SELECT GateType.id FROM GateType " 
             "JOIN TerminalType ON (TerminalType.id = GateType.terminal_id) "
             "WHERE TerminalType.letter = $4 "
