@@ -142,7 +142,6 @@ CREATE TABLE Flight (
 	flight_number	VARCHAR(7) NOT NULL,
 	departure_time	TIMESTAMP NOT NULL,
 	arrival_time	TIMESTAMP NOT NULL,
-	num_passengers	INTEGER NOT NULL,
 	gate_id 		INTEGER NOT NULL,
 	status_id		INTEGER NOT NULL,
 	airplane_id 	INTEGER NOT NULL,
@@ -158,9 +157,7 @@ CREATE TABLE Flight (
 	FOREIGN KEY 	(origin_id) 		REFERENCES LocationType(id) DEFERRABLE INITIALLY DEFERRED,
 	FOREIGN KEY 	(airline_id) 		REFERENCES AirlineType(id) DEFERRABLE INITIALLY DEFERRED,
 
-	CHECK	(origin_id = 1 OR destination_id = 1),
-	CHECK	(num_passengers >= 0)
-
+	CHECK	(origin_id = 1 OR destination_id = 1)
 
 );
 
@@ -405,14 +402,14 @@ COPY GateType(id, terminal_id, gate_number) FROM stdin;
 \.
 SELECT setval('gatetype_id_seq', 15);
 
-COPY Flight(id, flight_number, departure_time, arrival_time, num_passengers, gate_id, status_id, airplane_id, destination_id, origin_id, airline_id) FROM stdin;	
-1	AL001	2023-03-09 09:00:00	2023-03-09 16:00:00	124	8	2	2	1	2	1
-2	EK230	2023-03-09 09:00:00	2023-03-09 16:00:00	124	8	2	2	4	1	5
-3	SQ028	2023-03-09 09:00:00	2023-03-09 16:00:00	124	8	2	2	1	9	4
-4	CD024	2023-03-11 11:00:00	2023-03-11 18:00:00	230	7	4	3	3	1	3
-5	AA028	2023-03-11 11:00:00	2023-03-11 18:00:00	230	10	4	1	5	1	2
-6	BB022	2023-03-11 11:00:00	2023-03-11 18:00:00	230	14	3	1	7	1	6
-7	CC055	2023-03-11 11:00:00	2023-03-11 18:00:00	230	12	2	4	1	8	6
+COPY Flight(id, flight_number, departure_time, arrival_time, gate_id, status_id, airplane_id, destination_id, origin_id, airline_id) FROM stdin;	
+1	AL001	2023-03-09 09:00:00	2023-03-09 16:00:00	8	2	2	1	2	1
+2	EK230	2023-03-09 09:00:00	2023-03-09 16:00:00	8	2	2	4	1	5
+3	SQ028	2023-03-09 09:00:00	2023-03-09 16:00:00	8	2	2	1	9	4
+4	CD024	2023-03-11 11:00:00	2023-03-11 18:00:00	7	4	3	3	1	3
+5	AA028	2023-03-11 11:00:00	2023-03-11 18:00:00	10	4	1	5	1	2
+6	BB022	2023-03-11 11:00:00	2023-03-11 18:00:00	14	3	1	7	1	6
+7	CC055	2023-03-11 11:00:00	2023-03-11 18:00:00	12	2	4	1	8	6
 \.
 SELECT setval('flight_id_seq', 8);
 
