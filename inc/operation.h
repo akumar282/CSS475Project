@@ -26,6 +26,8 @@ public:
     static constexpr operation_t c_delay = 8;
     static constexpr operation_t c_meals = 9;
     static constexpr operation_t c_mealTypes = 10;
+    static constexpr operation_t c_changeStatus = 11;
+
 
     // operation functions
     static error_t shell_exit();
@@ -41,6 +43,8 @@ public:
     static error_t delay(const API&, const std::list<std::string>&);
     static error_t mealsOffered(const API&, const std::list<std::string>&);
     static error_t meals(const API&, const std::list<std::string>&);
+    static error_t changeStatus(const API&, const std::list<std::string>&);
+
 
     // mappings
     static const std::map<std::string, operation_t> commandList;

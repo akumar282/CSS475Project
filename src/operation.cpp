@@ -61,7 +61,8 @@ const std::map<std::string, operation_t> Operation::commandList = {
     {"list", Operation::c_list},
     {"delay", Operation::c_delay},
     {"mealTypes", Operation::c_mealTypes},
-    {"meals", Operation::c_meals}
+    {"meals", Operation::c_meals},
+    {"changeStatus", Operation::c_changeStatus}
 };
 
 //maps keyword to its corresponding help message
@@ -75,7 +76,8 @@ const std::map<std::string, std::string> Operation::commandHelp = {
     {"list", "list - lists every active flight"},
     {"delay", "delay <flight-number> <\"hh:mm:ss\"> - lists every active flight"},
     {"meals", "meals <flight-number> - lists all the meals on a flight"},
-    {"mealTypes", "mealTypes <flight-number> - lists all the categories of meals on a flight"}
+    {"mealTypes", "mealTypes <flight-number> - lists all the categories of meals on a flight"},
+    {"changeStatus", "changeStatus <flight-number> - updates the status of the flight "},
 };
 
 // command implementation
@@ -617,6 +619,65 @@ error_t Operation::passengers(const API& api, const std::list<std::string>& args
     
     for(auto it = rows.begin(); it != rows.end(); ++it) {
          std::cout << "Flight now has " << it[0].as<std::string>() << " passengers." << std::endl;
+    }
+
+    return Error::SUCCESS;
+}
+
+
+error_t Operation::changeStatus(const API& api, const std::list<std::string>& args) {
+    if (args.size() != 2) return Error::BADARGS;
+
+    auto it = args.begin();
+
+    std::string flightNum = *(it);
+    if (!isValidFlightNum(api, flightNum)) return Error::BADARGS;
+    
+    std::string newStatus = *(++it);
+
+    
+    pqxx::connection connection = api.begin();
+    pqxx::work query(connection);
+
+    connection.prepare(
+        "update_status",
+        "UPDATE Flight "
+        "SET status_id = (SELECT id FROM StatusType WHERE name = $1) "
+        "WHERE flight_number = $2; "
+    );
+
+    connection.prepare(
+        "get_status",
+        "SELECT StatusType.name FROM Flight "
+            "JOIN StatusType ON (Flight.status_id = StatusType.id)  "
+        "WHERE flight_number = $1; "
+    );
+
+    pqxx::result rows;
+    try
+    {
+        rows = query.exec_prepared("update_status", newStatus, flightNum);
+    }
+    catch (const std::exception& e)
+    {
+        std::cerr << e.what() << std::endl;
+        return Error::DBERROR;
+    }
+
+    query.commit();
+
+    try
+    {    
+        rows = query.exec_prepared("get_status", flightNum);
+    }
+    catch (const std::exception& e)
+    {
+        std::cerr << e.what() << std::endl;
+        return Error::DBERROR;
+    }
+    
+    for(auto it = rows.begin(); it != rows.end(); ++it) {
+         std::cout << "Flight now has a status " << it[0].as<std::string>() << std::endl;
     }
 
     return Error::SUCCESS;
