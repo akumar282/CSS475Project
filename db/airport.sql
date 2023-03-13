@@ -168,7 +168,8 @@ CREATE TABLE Flight (
 CREATE TABLE Cargo (
 	id				SERIAL NOT NULL,
 	flight_id		INTEGER NOT NULL,
-	weight_lb		NUMERIC NOT NULL,				
+	weight_lb		NUMERIC NOT NULL,
+	barcode			CHAR(12) NOT NULL,				
 	
 	PRIMARY KEY		(id),
 	FOREIGN KEY 	(flight_id)		REFERENCES Flight(id) DEFERRABLE INITIALLY DEFERRED
@@ -184,6 +185,16 @@ CREATE TABLE MealToFlight (
 	FOREIGN KEY 	(flight_id) REFERENCES Flight(id) DEFERRABLE INITIALLY DEFERRED,
 	FOREIGN KEY 	(meal_id) 	REFERENCES MealType(id) DEFERRABLE INITIALLY DEFERRED
 );
+
+CREATE TABLE Passenger (
+	id				SERIAL NOT NULL,
+	flight_id		INTEGER NOT NULL,
+	barcode			CHAR(12) NOT NULL UNIQUE,
+	
+	PRIMARY KEY		(id),
+	FOREIGN KEY 	(flight_id) REFERENCES Flight(id) DEFERRABLE INITIALLY DEFERRED
+);
+
 
 -- After the schema has been created, test using the following commands
 
@@ -229,10 +240,6 @@ COPY AirplaneType(id, name, max_cargo, max_passengers, num_rows) FROM stdin;
 5	McDonnell Douglas MD-80	7500.0	168	6
 \.
 SELECT setval('airplanetype_id_seq', 6);
-
-COPY Cargo(id, flight_id, weight_lb) FROM stdin;
-\.
-SELECT setval('cargo_id_seq', 1);
 
 COPY CountryType(id, name) FROM stdin;
 1	United States
@@ -457,16 +464,59 @@ COPY MealToFlight(flight_id, meal_id) FROM stdin;
 7 	21
 \.
 
-
-COPY Cargo(id, flight_id, weight_lb) FROM stdin;
-1	1	1000.0
-2	2	1000.0
-3	1	1000.0
-4	2	1000.0
-5	3	1000.0
+COPY Cargo(id, flight_id, weight_lb, barcode) FROM stdin;
+1	1	48.4	QV5H0D5R5O5W
+2	1	204.3	17F3J6E8K6MA
+3	1	175.9	G3F8W8Y9TXE7
+4	2	269.8	34W2F2Q2T2G2
+5	2	49.9	9Y6T7T6T1K8T
+6	2	288.2	85N1G2F8W8X9
+7	3	99.6	0N8W8T8T8T8T
+8	3	411.5	VX9E9Z7R7Z6R
+9	3	164.2	5V5R5D5R5K5W
+10	4	62.3	6J3E6K3J6C3H
+11	4	231.7	4W9Y9Y7V5L1D
+12	4	289.6	V4R2R6R2R6RD
+13	5	251.3	3V5G5L5B5V5F
+14	5	332.0	Z4Z4H4G4X9ZD
+15	5	401.4	7E5F5G5C5V2C
+16	6	78.9	9T7T6T1T8T8T
+17	6	445.3	L3R3G3W8G3JC
+18	6	348.2	98W8E8W8T1KT
+19	7	96.8	D1J1K1N1H1M1
+20	7	463.1	9X9J9K9L9M9N
+21	7	171.7	7J8Y8T8T8T8T
+22	7	273.8	3R3G3W3G3H3J
+23	7	219.6	1J3H3J3K3L3M
 \.
-SELECT setval('cargo_id_seq', 6);
+SELECT setval('cargo_id_seq', 24);
 
+COPY Passenger(id, flight_id, barcode) from stdin;
+1	1	jK2vH8bZ7wMr
+2	1	QV5H0D5R5O5W
+3	1	lE2cQ5aZ8nGk
+4	1	pI8yK5eV9zCx
+5	2	pX9qH3nZ4jWp
+6	2	9Y6T7T6T1K8T
+7	2	oV9fH1kZ8eRr
+8	3	zK2nG6qH8rJy
+9	3	5V5R5D5R5K5W
+10	3	qT7eP2yB8lWz
+11	4	pM9gC5nY8rNk
+12	4	4W9Y9Y7V5L1D
+13	4	vK9nX1pH6tTb
+14	4	vH7mT2zJ6yQs
+15	5	Z4Z4H4G4X9ZD
+16	5	lU5zF1jM6gDn
+17	5	lX9fP3qY6jWq
+18	6	pU5hV1kS6fCz
+19	6	98W8E8W8T1KT
+20	6	iG4fH5vR1xJg
+21	7	oQ9xL5vY2mKf
+22	7	cZ1wN5vT8yGf
+23	7	1J3H3J3K3L3M
+\.
+SELECT setval('passenger_id_seq', 24);
 -- permissions
 CREATE USER admin WITH LOGIN PASSWORD 'password';
 GRANT ALL ON DATABASE airport TO admin;
