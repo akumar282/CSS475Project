@@ -158,7 +158,8 @@ CREATE TABLE Flight (
 	FOREIGN KEY 	(airline_id) 		REFERENCES AirlineType(id) DEFERRABLE INITIALLY DEFERRED,
 
 	CHECK	(origin_id = 1 OR destination_id = 1)
-
+	CHECK 	(origin_id != destination_id)
+	CHECK 	(departure_time < arrival_time)
 );
 
 --	Cargo Table
@@ -170,6 +171,8 @@ CREATE TABLE Cargo (
 	
 	PRIMARY KEY		(id),
 	FOREIGN KEY 	(flight_id)		REFERENCES Flight(id) DEFERRABLE INITIALLY DEFERRED
+
+	CHECK (weight_lb > 0)
 );
 
 
@@ -181,6 +184,7 @@ CREATE TABLE MealToFlight (
 	PRIMARY KEY		(flight_id, meal_id), 
 	FOREIGN KEY 	(flight_id) REFERENCES Flight(id) DEFERRABLE INITIALLY DEFERRED,
 	FOREIGN KEY 	(meal_id) 	REFERENCES MealType(id) DEFERRABLE INITIALLY DEFERRED
+
 );
 
 CREATE TABLE Passenger (
