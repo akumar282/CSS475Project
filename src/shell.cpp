@@ -120,6 +120,9 @@ error_t Shell::executeCommand(const Command& c) {
     case Operation::c_changeDestination : {
         return Operation::changeDestination(this->getAPI(), c.getArgs());
     }
+    case Operation::c_changeOrigin : {
+        return Operation::changeOrigin(this->getAPI(), c.getArgs());
+    }
     default : {
         return Error::BADCMD;
     }
