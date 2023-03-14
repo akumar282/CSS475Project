@@ -55,7 +55,7 @@ static bool isValidFlightNum(const API& api, const std::string& flightNum) {
     pqxx::result result1 = query.exec_prepared("CheckDup", flightNum);
     return result1.at(0).at(0).as<int>() == 1;
 }
-static bool isValidUpdateFlightnum(const API& api, const std::string& flightNum) {
+static bool isValidUpdateFlightnum(const std::string& flightNum) {
     const std::regex validFlightNumber("[A-Z]{2}[0-9]{2,4}");
     if (!std::regex_match(flightNum, validFlightNumber))
         return false;
@@ -110,7 +110,9 @@ const std::map<std::string, operation_t> Operation::commandList = {
     {"changeStatus", Operation::c_changeStatus},
     {"addCargo", Operation::c_addCargo},
     {"removeCargo", Operation::c_removeCargo},
-    {"changeDestination", Operation::c_changeDestination}
+    {"checkCargo", Operation::c_checkCargo},
+    {"changeDestination", Operation::c_changeDestination},
+    {"changeOrigin", Operation::c_changeOrigin},
 };
 
 //maps keyword to its corresponding help message
@@ -127,6 +129,11 @@ const std::map<std::string, std::string> Operation::commandHelp = {
     {"mealTypes", "mealTypes <flight-number> - lists all the categories of meals on a flight"},
     {"changeStatus", "changeStatus <flight-number> - updates the status of the flight "},
     {"changeDestination", "changeDestination <flight-number> - changes the current destination to new destination"},
+    {"changeOrigin", "changeOrigin <flight-number> - changes the current Origin to new Origin"},
+    {"addCargo", "addCargo <flight-number> <cargo-weight> <cargo-barcode>- adds cargo to a flight"},
+    {"removeCargo", "removeCargo <flight-number> <cargo-barcode> - removes cargo from a flight"},
+    {"checkCargo", "checkCargo <flight-number> - checks total weight of cargo in a flight"},
+    {"create", "create <flight-number> <departure-time> <arrival-time> <gate> <airplane> <destination> <origin> <airline>  - creates a new flight"},
 };
 
 // command implementation
@@ -342,12 +349,15 @@ error_t Operation::arrive(const API& api, const std::list<std::string>& args) {
     std::cout.flush();  
     return Error::SUCCESS;
 }
-
+// flight number , cargo weight, cargo barcode
 error_t Operation::addCargo(const API& api, const std::list<std::string>& args) {// todo redo with barcode and cargo weight
-    if(args.size() != 2) return Error::BADARGS;
-    std::string flightNum = args.front();
+    if(args.empty()) return Error::BADARGS;
+    auto it = args.begin();
+    std::string flightNum = *(it);
     if(!isValidFlightNum(api, flightNum)) return Error::BADARGS;
-    std::string cargo = *(++args.begin());
+    std::string cargo = *(++it);
+    std::string barcode = *(++it);
+    if(!isValidBarcode(barcode)) return Error::BADARGS;
     
     // flight number was specified and is valid
     pqxx::connection connection = api.begin();
@@ -355,17 +365,16 @@ error_t Operation::addCargo(const API& api, const std::list<std::string>& args) 
     
     connection.prepare(
         "add_cargo",
-        "INSERT INTO Cargo(id, flight_id, weight_lb)"
+        "INSERT INTO Cargo(id, flight_id, weight_lb, barcode)"
         "VALUES ((SELECT NEXTVAL('cargo_id_seq')),"
         "(SELECT id FROM Flight WHERE flight_number = $1),"
-        "$2)"
-      ";"
+        "$2, $3);"
     );
 
     pqxx::result rows; 
     try
     {    
-        rows = query.exec_prepared("add_cargo", cargo, flightNum);
+        rows = query.exec_prepared("add_cargo", flightNum, cargo, barcode);
     }
     catch (const std::exception& e)
     {
@@ -377,6 +386,8 @@ error_t Operation::addCargo(const API& api, const std::list<std::string>& args) 
         std::cout << it[0].as<std::string>() << '\n';
     }
     std::cout.flush();
+    query.commit();
+    std::cout<<"Cargo added to flight "<<flightNum << " With the barcode "<< barcode << std::endl;
     return Error::SUCCESS;
 }
 
@@ -537,12 +548,12 @@ error_t Operation::meals(const API& api, const std::list<std::string>& args) {
     return Error::SUCCESS;
 
 }
-
+// flightnum and cargo 
 error_t Operation::checkCargo(const API& api, const std::list<std::string>& args) {
-    if(args.size() != 2) return Error::BADARGS;
-    std::string flightNum = args.front();
+    if(args.empty()) return Error::BADARGS;
+    auto it = args.begin();
+    std::string flightNum = *(it);
     if(!isValidFlightNum(api, flightNum)) return Error::BADARGS;
-    std::string cargo = *(++args.begin());
     
     // flight number was specified and is valid
     pqxx::connection connection = api.begin();
@@ -565,11 +576,8 @@ error_t Operation::checkCargo(const API& api, const std::list<std::string>& args
         std::cerr << e.what() << std::endl;
         return Error::DBERROR;
     }
-
-    for (auto it = rows.begin(); it != rows.end(); ++it) {
-        std::cout << it[0].as<std::string>() << '\n';
-    }
-    std::cout.flush();
+        std::cout << "Cargo weight: " << rows[0][0].as<std::string>() << " lbs" << std::endl;
+        std::cout.flush();
     return Error::SUCCESS;
 }
 error_t Operation::mealTypes(const API& api, const std::list<std::string>& args) {
@@ -637,7 +645,7 @@ error_t Operation::changeStatus(const API& api, const std::list<std::string>& ar
     auto it = args.begin();
 
     std::string flightNum = *(it);
-    if (!isValidUpdateFlightnum(api, flightNum)) return Error::BADARGS;
+    if (!isValidUpdateFlightnum(flightNum)) return Error::BADARGS;
     
     std::string newStatus = *(++it);
     if (!std::regex_match(newStatus, std::regex("(Standby|Boarding|Departed|Delayed|In Transit|Arrived|Cancelled)"))) return Error::BADARGS;
@@ -694,8 +702,28 @@ error_t Operation::changeStatus(const API& api, const std::list<std::string>& ar
 }
 // args {flightNum, barcode}
 error_t Operation::removeCargo(const API& api, const std::list<std::string>& args) {
-
-
+    if (args.empty()) return Error::BADARGS;
+    auto it = args.begin();
+    std::string flightNum = *(it);
+    if (!isValidFlightNum(api, flightNum)) return Error::BADARGS;
+    std::string barcode = *(++it);
+    if (!isValidBarcode(barcode)) return Error::BADARGS;
+    pqxx::connection connection = api.begin();
+    pqxx::work query(connection);
+    connection.prepare(
+        "remove_cargo",
+        "DELETE FROM Cargo "
+        "WHERE flight_id = (SELECT id FROM Flight WHERE flight_number = $1) "
+            "AND barcode = $2; "
+    );
+    pqxx::result rows = query.exec_prepared("remove_cargo", flightNum, barcode);
+    query.commit();
+    if (rows.affected_rows() == 0) {
+        std::cout << "Cargo with barcode: "+ barcode+ " does not exist on flight: "+flightNum << std::endl;
+        return Error::BADARGS;
+    }
+    std::cout << "Cargo with barcode: "+ barcode+ " has been removed from flight: "+flightNum << std::endl;
+    return Error::SUCCESS;
 
 }
 
@@ -765,6 +793,67 @@ error_t Operation::changeDestination(const API& api, const std::list<std::string
     
     for(auto it = rows.begin(); it != rows.end(); ++it) {
          std::cout << "The new destination for the flight is " << it[0].as<std::string>() << std::endl;
+    }
+
+    return Error::SUCCESS;
+}
+
+error_t Operation::changeOrigin(const API &api,
+                                     const std::list<std::string> &args) {
+    if (args.empty()) return Error::BADARGS;
+
+    auto it = args.begin();
+
+    std::string flightNum = *(it);
+    if (!isValidFlightNum(api, flightNum)) return Error::BADARGS;
+
+    std::string newOrigin = *(++it);
+    if (!isValidCity(newOrigin)) return Error::BADARGS;
+
+    pqxx::connection connection = api.begin();
+    pqxx::work query(connection);
+
+    connection.prepare(
+        "update_origin",
+        "UPDATE Flight "
+        "SET origin_id =   (SELECT LocationType.id "
+        "FROM LocationType "
+        "JOIN CityType ON (CityType.id = LocationType.city_id) "
+        "WHERE CityType.name = $1 AND CityType.name NOT LIKE 'Detroit') "
+        "WHERE flight_number = $2 "
+        "AND origin_id = 1 "
+        "AND status_id = 4 OR status_id = 1"
+
+    );
+
+    connection.prepare(
+        "get_origin",
+        "SELECT CityType.name FROM Flight "
+        "JOIN LocationType ON (Flight.origin_id = LocationType.id)  "
+        "JOIN CityType ON (LocationType.city_id = CityType.id)  "
+        "WHERE flight_number = $1; ");
+
+    pqxx::result rows;
+    try {
+         rows = query.exec_prepared("update_origin", newOrigin,
+                                    flightNum);
+    } catch (const std::exception &e) {
+         std::cerr << e.what() << std::endl;
+         return Error::DBERROR;
+    }
+
+    query.commit();
+
+    try {
+         rows = query.exec_prepared("get_origin", flightNum);
+    } catch (const std::exception &e) {
+         std::cerr << e.what() << std::endl;
+         return Error::DBERROR;
+    }
+
+    for (auto it = rows.begin(); it != rows.end(); ++it) {
+         std::cout << "The new destination for the flight is "
+                   << it[0].as<std::string>() << std::endl;
     }
 
     return Error::SUCCESS;
