@@ -12,6 +12,6 @@ addCargo AL001 1000 ABECEECE1231
 removeCargo AL001 ABECEECE1231
 passenger AL001
 changeStatus AL001 Boarding
-changeDestination
-changeOrigin
-exit
+changeDestination AL001 KJFK
+changeOrigin AL001 KLAX
+exit 
