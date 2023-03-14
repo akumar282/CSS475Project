@@ -342,12 +342,15 @@ error_t Operation::arrive(const API& api, const std::list<std::string>& args) {
     std::cout.flush();  
     return Error::SUCCESS;
 }
-
+// flight number , cargo weight, cargo barcode
 error_t Operation::addCargo(const API& api, const std::list<std::string>& args) {// todo redo with barcode and cargo weight
-    if(args.size() != 2) return Error::BADARGS;
-    std::string flightNum = args.front();
+    if(args.empty()) return Error::BADARGS;
+    auto it = args.begin();
+    std::string flightNum = *(it);
     if(!isValidFlightNum(api, flightNum)) return Error::BADARGS;
-    std::string cargo = *(++args.begin());
+    std::string cargo = *(++it);
+    std::string barcode = *(++it);
+    if(!isValidBarcode(barcode)) return Error::BADARGS;
     
     // flight number was specified and is valid
     pqxx::connection connection = api.begin();
@@ -355,17 +358,16 @@ error_t Operation::addCargo(const API& api, const std::list<std::string>& args) 
     
     connection.prepare(
         "add_cargo",
-        "INSERT INTO Cargo(id, flight_id, weight_lb)"
+        "INSERT INTO Cargo(id, flight_id, weight_lb, barcode)"
         "VALUES ((SELECT NEXTVAL('cargo_id_seq')),"
         "(SELECT id FROM Flight WHERE flight_number = $1),"
-        "$2)"
-      ";"
+        "$2, $3);"
     );
 
     pqxx::result rows; 
     try
     {    
-        rows = query.exec_prepared("add_cargo", cargo, flightNum);
+        rows = query.exec_prepared("add_cargo", flightNum, cargo, barcode);
     }
     catch (const std::exception& e)
     {
@@ -377,6 +379,8 @@ error_t Operation::addCargo(const API& api, const std::list<std::string>& args) 
         std::cout << it[0].as<std::string>() << '\n';
     }
     std::cout.flush();
+    query.commit();
+    std::cout<<"Cargo added to flight "<<flightNum << " With the barcode "<< barcode << std::endl;
     return Error::SUCCESS;
 }
 
