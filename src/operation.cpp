@@ -743,7 +743,7 @@ error_t Operation::changeDestination(const API& api, const std::list<std::string
     if (!isValidUpdateFlightnum(flightNum)) return Error::BADARGS;
     
     std::string newDestination = *(++it);
-    if (!isValidCity(newDestination)) return Error::BADARGS;
+    if (!isValidICAO(newDestination)) return Error::BADARGS;
 
     pqxx::connection connection = api.begin();
     pqxx::work query(connection);
@@ -754,7 +754,7 @@ error_t Operation::changeDestination(const API& api, const std::list<std::string
         "SET destination_id =   (SELECT LocationType.id "
                                 "FROM LocationType "
                                     "JOIN CityType ON (CityType.id = LocationType.city_id) "
-                                "WHERE CityType.name = $1 AND CityType.name NOT LIKE 'Detroit') "
+                                "WHERE LocationType.icao = $1 AND LocationType.icao NOT LIKE 'KDTW') "
         "WHERE flight_number = $2 "
         "AND (status_id = 4 OR status_id = 1) "
         "AND origin_id = 1; "
@@ -811,7 +811,7 @@ error_t Operation::changeOrigin(const API &api,
     if (!isValidUpdateFlightnum(flightNum)) return Error::BADARGS;
 
     std::string newOrigin = *(++it);
-    if (!isValidCity(newOrigin)) return Error::BADARGS;
+    if (!isValidICAO(newOrigin)) return Error::BADARGS;
 
     pqxx::connection connection = api.begin();
     pqxx::work query(connection);
@@ -822,7 +822,7 @@ error_t Operation::changeOrigin(const API &api,
         "SET origin_id =   (SELECT LocationType.id "
                             "FROM LocationType "
                                 "JOIN CityType ON (CityType.id = LocationType.city_id) "
-                            "WHERE CityType.name = $1 AND CityType.name NOT LIKE 'Detroit') "
+                            "WHERE LocationType.icao = $1 AND LocationType.icao NOT LIKE 'KDTW') "
         "WHERE flight_number = $2 "
         "AND destination_id = 1 "
         "AND (status_id = 4 OR status_id = 1) "
