@@ -1,10 +1,10 @@
 help
 list
 status AL001
-create AA1234 "2021-03-01 12:00:00" "2021-03-01 14:00:00" A3 "Boeing 787" KDTW KJFK "American Airlines"
+create AA123 "2021-03-01 12:00:00" "2021-03-01 14:00:00" A3 "Boeing 787" KDTW KJFK "American Airlines"
 depart KSEA
 arrive KJFK
-passengers AA1234
+passengers AA123
 delay AL001 "00:30:01"
 meals AL001
 mealTypes AL001
