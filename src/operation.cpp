@@ -709,7 +709,7 @@ error_t Operation::changeDestination(const API& api, const std::list<std::string
     auto it = args.begin();
 
     std::string flightNum = *(it);
-    if (!isValidFlightNum(api, flightNum)) return Error::BADARGS;
+    if (!isValidUpdateFlightnum(api, flightNum)) return Error::BADARGS;
     
     std::string newDestination = *(++it);
     if (!isValidCity(newDestination)) return Error::BADARGS;
@@ -725,11 +725,12 @@ error_t Operation::changeDestination(const API& api, const std::list<std::string
                                     "JOIN CityType ON (CityType.id = LocationType.city_id) "
                                 "WHERE CityType.name = $1 AND CityType.name NOT LIKE 'Detroit') "
         "WHERE flight_number = $2 "
-        "AND origin_id = 1 "
-        "AND status_id = 4 OR status_id = 1"
+        "AND (status_id = 4 OR status_id = 1) "
+        "AND origin_id = 1; "
                                                                           
     );
 
+    
     connection.prepare(
         "get_destination",
         "SELECT CityType.name FROM Flight "
@@ -751,6 +752,7 @@ error_t Operation::changeDestination(const API& api, const std::list<std::string
 
     query.commit();
 
+    
     try
     {    
         rows = query.exec_prepared("get_destination", flightNum);
