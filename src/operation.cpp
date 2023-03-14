@@ -110,8 +110,9 @@ const std::map<std::string, operation_t> Operation::commandList = {
     {"changeStatus", Operation::c_changeStatus},
     {"addCargo", Operation::c_addCargo},
     {"removeCargo", Operation::c_removeCargo},
+    {"checkCargo", Operation::c_checkCargo},
     {"changeDestination", Operation::c_changeDestination},
-    {"changeOrigin", Operation::c_changeOrigin}
+    {"changeOrigin", Operation::c_changeOrigin},
 };
 
 //maps keyword to its corresponding help message
@@ -129,6 +130,10 @@ const std::map<std::string, std::string> Operation::commandHelp = {
     {"changeStatus", "changeStatus <flight-number> - updates the status of the flight "},
     {"changeDestination", "changeDestination <flight-number> - changes the current destination to new destination"},
     {"changeOrigin", "changeOrigin <flight-number> - changes the current Origin to new Origin"},
+    {"addCargo", "addCargo <flight-number> <cargo-weight> <cargo-barcode>- adds cargo to a flight"},
+    {"removeCargo", "removeCargo <flight-number> <cargo-barcode> - removes cargo from a flight"},
+    {"checkCargo", "checkCargo <flight-number> - checks total weight of cargo in a flight"},
+    {"create", "create <flight-number> <departure-time> <arrival-time> <gate> <airplane> <destination> <origin> <airline>  - creates a new flight"},
 };
 
 // command implementation
@@ -543,12 +548,12 @@ error_t Operation::meals(const API& api, const std::list<std::string>& args) {
     return Error::SUCCESS;
 
 }
-
+// flightnum and cargo 
 error_t Operation::checkCargo(const API& api, const std::list<std::string>& args) {
-    if(args.size() != 2) return Error::BADARGS;
-    std::string flightNum = args.front();
+    if(args.empty()) return Error::BADARGS;
+    auto it = args.begin();
+    std::string flightNum = *(it);
     if(!isValidFlightNum(api, flightNum)) return Error::BADARGS;
-    std::string cargo = *(++args.begin());
     
     // flight number was specified and is valid
     pqxx::connection connection = api.begin();
@@ -571,11 +576,8 @@ error_t Operation::checkCargo(const API& api, const std::list<std::string>& args
         std::cerr << e.what() << std::endl;
         return Error::DBERROR;
     }
-
-    for (auto it = rows.begin(); it != rows.end(); ++it) {
-        std::cout << it[0].as<std::string>() << '\n';
-    }
-    std::cout.flush();
+        std::cout << "Cargo weight: " << rows[0][0].as<std::string>() << " lbs" << std::endl;
+        std::cout.flush();
     return Error::SUCCESS;
 }
 error_t Operation::mealTypes(const API& api, const std::list<std::string>& args) {

@@ -114,6 +114,9 @@ error_t Shell::executeCommand(const Command& c) {
     case Operation::c_removeCargo : {
         return Operation::removeCargo(this->getAPI(), c.getArgs());
     }
+    case Operation::c_checkCargo : {
+        return Operation::checkCargo(this->getAPI(), c.getArgs());
+    }
     case Operation::c_changeDestination : {
         return Operation::changeDestination(this->getAPI(), c.getArgs());
     }
