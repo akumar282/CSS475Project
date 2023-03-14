@@ -1,7 +1,6 @@
 #include "../inc/operation.h"
 
 // arguement validation
-#include <random>
 
 std::string generate_random_string(int length) {
     std::string str("0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz");
@@ -165,21 +164,25 @@ error_t Operation::status(const API& api, const std::list<std::string>& args) {
     // we could abstract this out; not sure
     connection.prepare(
     "get_flight",
-    "SELECT flight_number, departure_time, arrival_time, num_passengers, letter, gate_number, statustype.name, airplanetype.name, airlinetype.name, origin.icao, destination.icao " 
-    "FROM flight " 
+    "SELECT flight_number, departure_time, arrival_time, ( "
+    "select count(*) "
+    "from passenger "
+    "where passenger.flight_id = flight.id "
+        "and flight.id = (select id from flight where flight_number = $1 ) "
+    ") as num_passengers, letter as Terminal, gate_number, statustype.name as status, airplanetype.name as plane_type, airlinetype.name as airline, origin.icao as origin, destination.icao as destination "
+    "FROM flight "
         "JOIN gatetype ON (flight.gate_id = gatetype.id) "
-        "JOIN terminaltype ON (gatetype.terminal_id = terminaltype.id)"
+        "JOIN terminaltype ON (gatetype.terminal_id = terminaltype.id) "
         "JOIN statustype ON (flight.status_id = statustype.id) "
         "JOIN airplanetype ON (flight.airplane_id = airplanetype.id) "
         "JOIN airlinetype ON (flight.airline_id = airlinetype.id) "
-        "JOIN locationtype AS origin ON (flight.origin_id = origin.id) "
+        "JOIN locationtype AS origin ON (flight.origin_id = origin.id) " 
         "JOIN locationtype AS destination ON (flight.destination_id = destination.id) "
+        
     "WHERE flight_number = $1 "
-        "AND" 
-    "("
+        "AND ( "
         "StatusType.name NOT LIKE 'Arrived'"
-            "AND StatusType.name NOT LIKE 'Cancelled'"
-    ")"
+           " AND StatusType.name NOT LIKE 'Cancelled' );"
     );
     // flight_number, departure_time, arrival_time, num_passengers, letter, gate_number, statustype.name, airplanetype.name, airlinetype.name, origin.icao, destination.icao
     // 0              1               2             3               4       5            6                7                  8                 9            10
@@ -757,8 +760,6 @@ error_t Operation::changeDestination(const API& api, const std::list<std::string
         "AND origin_id = 1; "
                                                                           
     );
-
-    
     connection.prepare(
         "get_destination",
         "SELECT CityType.name FROM Flight "
@@ -766,7 +767,6 @@ error_t Operation::changeDestination(const API& api, const std::list<std::string
             "JOIN CityType ON (LocationType.city_id = CityType.id)  "
         "WHERE flight_number = $1; "
     );
-
     pqxx::result rows;
     try
     {
@@ -790,8 +790,6 @@ error_t Operation::changeDestination(const API& api, const std::list<std::string
         std::cerr << e.what() << std::endl;
         return Error::DBERROR;
     }
-    
-    
     for(auto it = rows.begin(); it != rows.end(); ++it) {
          std::cout << "The new destination for the flight <" << flightNum << "> is " << it[0].as<std::string>() << std::endl;
     }
