@@ -697,6 +697,7 @@ error_t Operation::removeCargo(const API& api, const std::list<std::string>& arg
 
 
 }
+
 // Set destination: Update the destination
 //          Edge 1: Can't be cancelled, arrived, or in the air
 //          Edge 2: The origin needs to be our airport 
@@ -723,16 +724,8 @@ error_t Operation::changeDestination(const API& api, const std::list<std::string
                                     "JOIN CityType ON (CityType.id = LocationType.city_id) "
                                 "WHERE CityType.name = $1 AND CityType.name NOT LIKE 'Detroit') "
         "WHERE flight_number = $2 "
-        "AND origin_id = ( "
-            "SELECT LocationType.id "
-            "FROM LocationType "
-                "JOIN CityType ON (CityType.id = LocationType.city_id) "
-            "WHERE CityType.name = 'Detroit') "
-        "AND status_id = ( "
-            "SELECT id "
-            "FROM StatusType "
-            "WHERE StatusType.name IN ('Standby', 'Delayed') "
-        "); "
+        "AND origin_id = 1 "
+        "AND status_id = 4 OR status_id = 1"
                                                                           
     );
 
