@@ -32,7 +32,7 @@ public:
     static constexpr operation_t c_changeDestination = 12;
     static constexpr operation_t c_removeCargo = 13;
     static constexpr operation_t c_addCargo = 14;
-
+    static constexpr operation_t c_changeOrigin = 15;
 
     // operation functions
     static error_t shell_exit();
@@ -51,7 +51,7 @@ public:
     static error_t meals(const API&, const std::list<std::string>&);
     static error_t changeStatus(const API&, const std::list<std::string>&);
     static error_t changeDestination(const API&, const std::list<std::string>&);
-
+    static error_t changeOrigin(const API &, const std::list<std::string> &);
 
     // mappings
     static const std::map<std::string, operation_t> commandList;
