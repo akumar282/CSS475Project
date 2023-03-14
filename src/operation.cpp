@@ -1,7 +1,42 @@
 #include "../inc/operation.h"
 
 // arguement validation
+#include <random>
 
+std::string generate_random_string(int length) {
+    std::string str("0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz");
+    std::random_device rd;
+    std::mt19937 generator(rd());
+    std::uniform_int_distribution<> distr(0, str.size() - 1);
+    std::string random_string;
+    for (int n = 0; n < length; ++n)
+        random_string += str[distr(generator)];
+    return random_string;
+}
+static bool isValidBarcode(std::string barcode) {
+    const std::regex validBarcode("[a-zA-Z0-9]{12}");
+    return std::regex_match(barcode, validBarcode);
+}
+static std::string isDupBarcode(const API& api, std::string barcode) {
+    pqxx::connection connection = api.begin();
+    pqxx::work query(connection);
+    std::string dupBarcode = barcode;
+    while(true) {
+        connection.prepare( 
+            "DupBarcode",
+            "SELECT Passenger.barcode "
+            "FROM Passenger "
+            "WHERE passenger.barcode = $1 ; "
+        );
+        pqxx::result result1 = query.exec_prepared("DupBarcode", barcode);
+        if (result1.size() == 0) {
+            return dupBarcode;
+        }
+        else {
+            dupBarcode = generate_random_string(12);
+        }
+    }
+}
 static bool isValidFlightNum(const API& api, const std::string& flightNum) {
     const std::regex validFlightNumber("[A-Z]{2}[0-9]{2,4}");
     if (!std::regex_match(flightNum, validFlightNumber))
@@ -19,6 +54,12 @@ static bool isValidFlightNum(const API& api, const std::string& flightNum) {
     );
     pqxx::result result1 = query.exec_prepared("CheckDup", flightNum);
     return result1.at(0).at(0).as<int>() == 1;
+}
+static bool isValidUpdateFlightnum(const API& api, const std::string& flightNum) {
+    const std::regex validFlightNumber("[A-Z]{2}[0-9]{2,4}");
+    if (!std::regex_match(flightNum, validFlightNumber))
+        return false;
+    return true;
 }
 static bool isValidDateTime(const std::string& dateTime) {
     const std::regex validDateTime("[0-9]{4}-[0-9]{2}-[0-9]{2} [0-9]{2}:[0-9]{2}:[0-9]{2}");
@@ -568,64 +609,24 @@ error_t Operation::mealTypes(const API& api, const std::list<std::string>& args)
     return Error::SUCCESS;
 }
 
-
+// flightnum
 error_t Operation::passengers(const API& api, const std::list<std::string>& args) { //TODO MAKE SURE THIS WORKS
-    if (args.size() != 2) return Error::BADARGS;
-
+    if(args.empty()) return Error::BADARGS;
     auto it = args.begin();
-
     std::string flightNum = *(it);
     if (!isValidFlightNum(api, flightNum)) return Error::BADARGS;
-
+    std::string barcode = generate_random_string(12);
+    barcode = isDupBarcode(api, barcode);
     pqxx::connection connection = api.begin();
     pqxx::work query(connection);
-
-    // connection.prepare(
-    //     "update_passengers",
-    //     "UPDATE Flight "
-    //     "SET num_passengers = num_passengers + $1 "
-    //     "WHERE flight_number = $2 AND (num_passengers + $1) > 0 AND (num_passengers + $1) < (SELECT max_passengers FROM AirplaneType WHERE id = Flight.airplane_id); "
-    // );
-
-    // connection.prepare(
-    //     "get_passengers",
-    //     "SELECT num_passengers FROM flight "
-    //     "WHERE flight_number = $1"
-    //     ";"
-    // );
-
-    // pqxx::result rows;
-    // try
-    // {
-    //     rows = query.exec_prepared("update_passengers", numPassengers, flightNum);
-    // }
-    // catch (const std::exception& e)
-    // {
-    //     std::cerr << e.what() << std::endl;
-    //     return Error::DBERROR;
-    // }
-
-    // if(rows.affected_rows() != 1) {
-    //     std::cout << "Error: Could not update passengers." << std::endl;
-    //     return Error::DBERROR;
-    // }
-
-    // query.commit();
-
-    // try
-    // {    
-    //     rows = query.exec_prepared("get_passengers", flightNum);
-    // }
-    // catch (const std::exception& e)
-    // {
-    //     std::cerr << e.what() << std::endl;
-    //     return Error::DBERROR;
-    // }
-    
-    // for(auto it = rows.begin(); it != rows.end(); ++it) {
-    //      std::cout << "Flight now has " << it[0].as<std::string>() << " passengers." << std::endl;
-    // }
-
+    connection.prepare(
+        "add_passenger",
+        "INSERT INTO Passenger (id, flight_id, barcode) " 
+        "VALUES ((SELECT NEXTVAL('passenger_id_seq')), (SELECT id FROM Flight WHERE flight_number = $1 ), $2);"
+    ); 
+    pqxx::result rows = query.exec_prepared("add_passenger", flightNum, barcode);
+    query.commit();
+    std::cout << "Passenger for the flight: "+ flightNum+ " has been added with the barcode: "+barcode << std::endl;
     return Error::SUCCESS;
 }
 
@@ -636,10 +637,10 @@ error_t Operation::changeStatus(const API& api, const std::list<std::string>& ar
     auto it = args.begin();
 
     std::string flightNum = *(it);
-    if (!isValidFlightNum(api, flightNum)) return Error::BADARGS;
+    if (!isValidUpdateFlightnum(api, flightNum)) return Error::BADARGS;
     
     std::string newStatus = *(++it);
-    if (!std::regex_match(newStatus, std::regex("^(Standby|Boarding|Departed|Delayed|In Transit|Arrived|Cancelled)$"))) return Error::BADARGS;
+    if (!std::regex_match(newStatus, std::regex("(Standby|Boarding|Departed|Delayed|In Transit|Arrived|Cancelled)"))) return Error::BADARGS;
     
     std::cout << "Flight number: " << flightNum << std::endl;
     std::cout << "New status: " << newStatus << std::endl;
