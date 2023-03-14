@@ -100,13 +100,16 @@ error_t Shell::executeCommand(const Command& c) {
         return Operation::delay(this->getAPI(), c.getArgs());
     }
     case Operation::c_mealTypes : {
-        return Operation::mealsOffered(this->getAPI(), c.getArgs());
+        return Operation::mealTypes(this->getAPI(), c.getArgs());
     }
     case Operation::c_meals : {
         return Operation::meals(this->getAPI(), c.getArgs());
     }
     case Operation::c_changeStatus : {
         return Operation::changeStatus(this->getAPI(), c.getArgs());
+    }
+    case Operation::c_addCargo : {
+        return Operation::addCargo(this->getAPI(), c.getArgs());
     }
     default : {
         return Error::BADCMD;
