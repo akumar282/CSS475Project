@@ -641,8 +641,8 @@ error_t Operation::changeStatus(const API& api, const std::list<std::string>& ar
     std::string newStatus = *(++it);
     if (!std::regex_match(newStatus, std::regex("^(Standby|Boarding|Departed|Delayed|In Transit|Arrived|Cancelled)$"))) return Error::BADARGS;
     
-    std::cout << "flight number: " << flightNum << std::endl;
-    std::cout << "new status: " << newStatus << std::endl;
+    std::cout << "Flight number: " << flightNum << std::endl;
+    std::cout << "New status: " << newStatus << std::endl;
 
 
     pqxx::connection connection = api.begin();
