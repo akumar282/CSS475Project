@@ -631,7 +631,7 @@ error_t Operation::passengers(const API& api, const std::list<std::string>& args
 
 
 error_t Operation::changeStatus(const API& api, const std::list<std::string>& args) {
-    if (args.size() != 2) return Error::BADARGS;
+    if (args.empty()) return Error::BADARGS;
 
     auto it = args.begin();
 
@@ -639,8 +639,12 @@ error_t Operation::changeStatus(const API& api, const std::list<std::string>& ar
     if (!isValidFlightNum(api, flightNum)) return Error::BADARGS;
     
     std::string newStatus = *(++it);
-    //if (!std::regex_match(newStatus, std::regex("^(Standby|Boarding|Departed|Delayed|In Transit|Arrived|Cancelled)$"))) return Error::BADARGS;
+    if (!std::regex_match(newStatus, std::regex("^(Standby|Boarding|Departed|Delayed|In Transit|Arrived|Cancelled)$"))) return Error::BADARGS;
     
+    std::cout << "flight number: " << flightNum << std::endl;
+    std::cout << "new status: " << newStatus << std::endl;
+
+
     pqxx::connection connection = api.begin();
     pqxx::work query(connection);
 
@@ -698,7 +702,7 @@ error_t Operation::removeCargo(const API& api, const std::list<std::string>& arg
 //          Edge 2: The origin needs to be our airport 
 //          
 error_t Operation::changeDestination(const API& api, const std::list<std::string>& args) {
-    if (args.size() != 2) return Error::BADARGS;
+    if (args.empty()) return Error::BADARGS;
 
     auto it = args.begin();
 
@@ -718,19 +722,25 @@ error_t Operation::changeDestination(const API& api, const std::list<std::string
                                 "FROM LocationType "
                                     "JOIN CityType ON (CityType.id = LocationType.city_id) "
                                 "WHERE CityType.name = $1 AND CityType.name NOT LIKE 'Detroit') "
-        "WHERE flight_number = $2 AND origin_id = (SELECT LocationType.id "
-                                                  "FROM LocationType "
-                                                        "JOIN CityType ON (CityType.id = LocationType.city_id) "
-                                                  "WHERE CityType.name = 'Detroit') "
-                                                   "AND status_id = (SELECT id FROM StatusType "
-                                                                    "WHERE StatusType.name LIKE 'Standby' AND StatusType.name LIKE 'Delayed'; "
+        "WHERE flight_number = $2 "
+        "AND origin_id = ( "
+            "SELECT LocationType.id "
+            "FROM LocationType "
+                "JOIN CityType ON (CityType.id = LocationType.city_id) "
+            "WHERE CityType.name = 'Detroit') "
+        "AND status_id = ( "
+            "SELECT id "
+            "FROM StatusType "
+            "WHERE StatusType.name IN ('Standby', 'Delayed') "
+        "); "
                                                                           
     );
 
     connection.prepare(
         "get_destination",
         "SELECT CityType.name FROM Flight "
-            "JOIN LocationType ON (Flight.destination_id = CityType.id)  "
+            "JOIN LocationType ON (Flight.destination_id = LocationType.id)  "
+            "JOIN CityType ON (LocationType.city_id = CityType.id)  "
         "WHERE flight_number = $1; "
     );
 
