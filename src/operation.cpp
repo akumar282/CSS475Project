@@ -692,7 +692,7 @@ error_t Operation::removeCargo(const API& api, const std::list<std::string>& arg
 
 
 
-
+}
 // Set destination: Update the destination
 //          Edge 1: Can't be cancelled, arrived, or in the air
 //          Edge 2: The origin needs to be our airport 
