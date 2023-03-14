@@ -737,11 +737,11 @@ error_t Operation::changeDestination(const API& api, const std::list<std::string
     auto it = args.begin();
 
     std::string flightNum = *(it);
-    if (!isValidUpdateFlightnum(api, flightNum)) return Error::BADARGS;
+    if (!isValidUpdateFlightnum(flightNum)) return Error::BADARGS;
     
     std::string newDestination = *(++it);
     if (!isValidCity(newDestination)) return Error::BADARGS;
-    
+
     pqxx::connection connection = api.begin();
     pqxx::work query(connection);
 
@@ -791,8 +791,9 @@ error_t Operation::changeDestination(const API& api, const std::list<std::string
         return Error::DBERROR;
     }
     
+    
     for(auto it = rows.begin(); it != rows.end(); ++it) {
-         std::cout << "The new destination for the flight is " << it[0].as<std::string>() << std::endl;
+         std::cout << "The new destination for the flight <" << flightNum << "> is " << it[0].as<std::string>() << std::endl;
     }
 
     return Error::SUCCESS;
