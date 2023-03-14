@@ -231,10 +231,10 @@ error_t Operation::create(const API& api, const std::list<std::string>& args) {
     auto it = args.begin();
     
     std::string flightNum = *it;
-    if(!isNewFlight(api ,flightNum)) {return Error::BADARGS;}
+    if(!isNewFlight(api ,flightNum)) {std::cerr << "Flight " << flightNum << " already exists." << std::endl; return Error::BADARGS;}
     std::string departure = *(++it);
     std::string arrival = *(++it);
-    if(!isValidDateTime(departure) || !isValidDateTime(arrival)) {return Error::BADARGS;}
+    if(!isValidDateTime(departure) || !isValidDateTime(arrival)) { std::cerr << departure << " or " << arrival << "is incorrect" << std::endl; return Error::BADARGS;}
     std::string gate = *(++it);
     if(!isValidGate(gate)) {return Error::BADARGS;}
     std::string airplane = *(++it);
@@ -276,11 +276,6 @@ error_t Operation::create(const API& api, const std::list<std::string>& args) {
     {
         std::cerr << e.what() << std::endl;
         return Error::DBERROR;
-    }
-    if (result.affected_rows() == 0) {
-        std::cout << result.query() << std::endl;
-        std::cerr << "Flight " << flightNum << " already exists." << std::endl;
-        return Error::BADARGS;
     }
     std::cout << "Flight " << flightNum << " created." << std::endl; 
     query.commit();
@@ -524,7 +519,7 @@ error_t Operation::delay(const API& api, const std::list<std::string>& args) {
     std::cout << "Flight " << flightNum << " delayed by " << delay << std::endl;
     return Error::SUCCESS;
 }
-
+//flight_num
 error_t Operation::meals(const API& api, const std::list<std::string>& args) {
     if(args.empty()) return Error::BADARGS;
 
@@ -668,12 +663,11 @@ error_t Operation::changeStatus(const API& api, const std::list<std::string>& ar
     if (!isValidUpdateFlightnum(flightNum)) return Error::BADARGS;
     
     std::string newStatus = *(++it);
-    if (!std::regex_match(newStatus, std::regex("(Standby|Boarding|Departed|Delayed|In Transit|Arrived|Cancelled)"))) return Error::BADARGS;
+    if (!std::regex_match(newStatus, std::regex("(?i)(Standby|Boarding|Departed|Delayed|In Transit|Arrived|Cancelled)"))) return Error::BADARGS;
     
     std::cout << "Flight number: " << flightNum << std::endl;
     std::cout << "New status: " << newStatus << std::endl;
-
-
+    
     pqxx::connection connection = api.begin();
     pqxx::work query(connection);
 

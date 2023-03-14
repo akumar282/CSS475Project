@@ -6,5 +6,12 @@ depart KSEA
 arrive KJFK
 passengers AA1234
 delay AL001 "00:30:01"
-status AL001
+meals AL001
+mealTypes AL001
+addCargo AL001 1000 ABECEECE1231
+removeCargo AL001 ABECEECE1231
+passenger AL001
+changeStatus AL001 Boarding
+changeDestination
+changeOrigin
 exit
