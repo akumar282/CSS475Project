@@ -7,6 +7,8 @@
 #include <pqxx/pqxx>
 #include <regex>
 #include <iomanip>
+#include <random>
+#include <string>
 
 // defines operation ids for jump table
 typedef int operation_t;
