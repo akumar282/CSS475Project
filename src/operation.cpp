@@ -110,7 +110,8 @@ const std::map<std::string, operation_t> Operation::commandList = {
     {"changeStatus", Operation::c_changeStatus},
     {"addCargo", Operation::c_addCargo},
     {"removeCargo", Operation::c_removeCargo},
-    {"changeDestination", Operation::c_changeDestination}
+    {"changeDestination", Operation::c_changeDestination},
+    {"changeOrigin", Operation::c_changeOrigin}
 };
 
 //maps keyword to its corresponding help message
@@ -127,6 +128,7 @@ const std::map<std::string, std::string> Operation::commandHelp = {
     {"mealTypes", "mealTypes <flight-number> - lists all the categories of meals on a flight"},
     {"changeStatus", "changeStatus <flight-number> - updates the status of the flight "},
     {"changeDestination", "changeDestination <flight-number> - changes the current destination to new destination"},
+    {"changeOrigin", "changeOrigin <flight-number> - changes the current Origin to new Origin"},
 };
 
 // command implementation
@@ -763,6 +765,67 @@ error_t Operation::changeDestination(const API& api, const std::list<std::string
     
     for(auto it = rows.begin(); it != rows.end(); ++it) {
          std::cout << "The new destination for the flight is " << it[0].as<std::string>() << std::endl;
+    }
+
+    return Error::SUCCESS;
+}
+
+error_t Operation::changeOrigin(const API &api,
+                                     const std::list<std::string> &args) {
+    if (args.empty()) return Error::BADARGS;
+
+    auto it = args.begin();
+
+    std::string flightNum = *(it);
+    if (!isValidFlightNum(api, flightNum)) return Error::BADARGS;
+
+    std::string newOrigin = *(++it);
+    if (!isValidCity(newOrigin)) return Error::BADARGS;
+
+    pqxx::connection connection = api.begin();
+    pqxx::work query(connection);
+
+    connection.prepare(
+        "update_origin",
+        "UPDATE Flight "
+        "SET origin_id =   (SELECT LocationType.id "
+        "FROM LocationType "
+        "JOIN CityType ON (CityType.id = LocationType.city_id) "
+        "WHERE CityType.name = $1 AND CityType.name NOT LIKE 'Detroit') "
+        "WHERE flight_number = $2 "
+        "AND origin_id = 1 "
+        "AND status_id = 4 OR status_id = 1"
+
+    );
+
+    connection.prepare(
+        "get_origin",
+        "SELECT CityType.name FROM Flight "
+        "JOIN LocationType ON (Flight.origin_id = LocationType.id)  "
+        "JOIN CityType ON (LocationType.city_id = CityType.id)  "
+        "WHERE flight_number = $1; ");
+
+    pqxx::result rows;
+    try {
+         rows = query.exec_prepared("update_origin", newOrigin,
+                                    flightNum);
+    } catch (const std::exception &e) {
+         std::cerr << e.what() << std::endl;
+         return Error::DBERROR;
+    }
+
+    query.commit();
+
+    try {
+         rows = query.exec_prepared("get_origin", flightNum);
+    } catch (const std::exception &e) {
+         std::cerr << e.what() << std::endl;
+         return Error::DBERROR;
+    }
+
+    for (auto it = rows.begin(); it != rows.end(); ++it) {
+         std::cout << "The new destination for the flight is "
+                   << it[0].as<std::string>() << std::endl;
     }
 
     return Error::SUCCESS;
