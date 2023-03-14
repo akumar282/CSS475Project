@@ -54,6 +54,23 @@ static bool isValidFlightNum(const API& api, const std::string& flightNum) {
     pqxx::result result1 = query.exec_prepared("CheckDup", flightNum);
     return result1.at(0).at(0).as<int>() == 1;
 }
+static bool isNewFlight(const API& api, const std::string& flightNum) {
+    const std::regex validFlightNumber("[A-Z]{2}[0-9]{2,4}");
+    if (!std::regex_match(flightNum, validFlightNumber))
+        return false;
+    pqxx::connection connection = api.begin();
+    pqxx::work query(connection);
+    connection.prepare("CheckDup",
+    "SELECT COUNT(*) "
+    "FROM Flight "
+    "JOIN StatusType ON (Flight.status_id = StatusType.id) "
+    "WHERE (StatusType.name NOT LIKE 'Arrived' "
+        "AND StatusType.name NOT LIKE 'Cancelled') "
+    "AND flight_number = $1 ; "
+    );
+    pqxx::result result1 = query.exec_prepared("CheckDup", flightNum);
+    return result1.at(0).at(0).as<int>() == 0;
+}
 static bool isValidUpdateFlightnum(const std::string& flightNum) {
     const std::regex validFlightNumber("[A-Z]{2}[0-9]{2,4}");
     if (!std::regex_match(flightNum, validFlightNumber))
@@ -132,7 +149,7 @@ const std::map<std::string, std::string> Operation::commandHelp = {
     {"addCargo", "addCargo <flight-number> <cargo-weight> <cargo-barcode>- adds cargo to a flight"},
     {"removeCargo", "removeCargo <flight-number> <cargo-barcode> - removes cargo from a flight"},
     {"checkCargo", "checkCargo <flight-number> - checks total weight of cargo in a flight"},
-    {"create", "create <flight-number> <departure-time> <arrival-time> <gate> <airplane> <destination> <origin> <airline>  - creates a new flight"},
+    {"create", "create <flight-number> <departure-time \"YYYY-MM-DD  HH:MM:SS\"> <arrival-time \"YYYY-MM-DD  HH:MM:SS\"> <gate> <airplane> <destination> <origin> <airline>  - creates a new flight put values in quotes"},
 };
 
 // command implementation
@@ -214,7 +231,7 @@ error_t Operation::create(const API& api, const std::list<std::string>& args) {
     auto it = args.begin();
     
     std::string flightNum = *it;
-    if(!isValidFlightNum(api ,flightNum)) {return Error::BADARGS;}
+    if(!isNewFlight(api ,flightNum)) {return Error::BADARGS;}
     std::string departure = *(++it);
     std::string arrival = *(++it);
     if(!isValidDateTime(departure) || !isValidDateTime(arrival)) {return Error::BADARGS;}
@@ -260,8 +277,8 @@ error_t Operation::create(const API& api, const std::list<std::string>& args) {
         std::cerr << e.what() << std::endl;
         return Error::DBERROR;
     }
-    
     if (result.affected_rows() == 0) {
+        std::cout << result.query() << std::endl;
         std::cerr << "Flight " << flightNum << " already exists." << std::endl;
         return Error::BADARGS;
     }
