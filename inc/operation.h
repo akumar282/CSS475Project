@@ -27,9 +27,9 @@ public:
     static constexpr operation_t c_meals = 9;
     static constexpr operation_t c_mealTypes = 10;
     static constexpr operation_t c_changeStatus = 11;
-    static constexpr operation_t c_addCargo = 12;
+    static constexpr operation_t c_changeDestination = 12;
     static constexpr operation_t c_removeCargo = 13;
-
+    static constexpr operation_t c_addCargo = 14;
 
 
     // operation functions
@@ -48,6 +48,7 @@ public:
     static error_t mealTypes(const API&, const std::list<std::string>&);
     static error_t meals(const API&, const std::list<std::string>&);
     static error_t changeStatus(const API&, const std::list<std::string>&);
+    static error_t changeDestination(const API&, const std::list<std::string>&);
 
 
     // mappings

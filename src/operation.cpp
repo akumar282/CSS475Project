@@ -44,6 +44,10 @@ static bool isValidAirline(const std::string& airline) {
     const std::regex validAirline("[a-zA-Z ]+");
     return std::regex_match(airline, validAirline);
 }
+static bool isValidCity(const std::string& city) {
+    const std::regex validCity("[a-zA-Z ]+");
+    return std::regex_match(city, validCity);
+}
 
 
 
@@ -65,6 +69,7 @@ const std::map<std::string, operation_t> Operation::commandList = {
     {"changeStatus", Operation::c_changeStatus},
     {"addCargo", Operation::c_addCargo},
     {"removeCargo", Operation::c_removeCargo},
+    {"changeDestination", Operation::c_changeDestination}
 };
 
 //maps keyword to its corresponding help message
@@ -80,6 +85,7 @@ const std::map<std::string, std::string> Operation::commandHelp = {
     {"meals", "meals <flight-number> - lists all the meals on a flight"},
     {"mealTypes", "mealTypes <flight-number> - lists all the categories of meals on a flight"},
     {"changeStatus", "changeStatus <flight-number> - updates the status of the flight "},
+    {"changeDestination", "changeDestination <flight-number> - changes the current destination to new destination"},
 };
 
 // command implementation
@@ -633,7 +639,7 @@ error_t Operation::changeStatus(const API& api, const std::list<std::string>& ar
     if (!isValidFlightNum(api, flightNum)) return Error::BADARGS;
     
     std::string newStatus = *(++it);
-
+    //if (!std::regex_match(newStatus, std::regex("^(Standby|Boarding|Departed|Delayed|In Transit|Arrived|Cancelled)$"))) return Error::BADARGS;
     
     pqxx::connection connection = api.begin();
     pqxx::work query(connection);
@@ -684,4 +690,76 @@ error_t Operation::changeStatus(const API& api, const std::list<std::string>& ar
 // args {flightNum, barcode}
 error_t Operation::removeCargo(const API& api, const std::list<std::string>& args) {
 
+
+
+
+// Set destination: Update the destination
+//          Edge 1: Can't be cancelled, arrived, or in the air
+//          Edge 2: The origin needs to be our airport 
+//          
+error_t Operation::changeDestination(const API& api, const std::list<std::string>& args) {
+    if (args.size() != 2) return Error::BADARGS;
+
+    auto it = args.begin();
+
+    std::string flightNum = *(it);
+    if (!isValidFlightNum(api, flightNum)) return Error::BADARGS;
+    
+    std::string newDestination = *(++it);
+    if (!isValidCity(newDestination)) return Error::BADARGS;
+    
+    pqxx::connection connection = api.begin();
+    pqxx::work query(connection);
+
+    connection.prepare(
+        "update_destination",
+        "UPDATE Flight "
+        "SET destination_id =   (SELECT LocationType.id "
+                                "FROM LocationType "
+                                    "JOIN CityType ON (CityType.id = LocationType.city_id) "
+                                "WHERE CityType.name = $1 AND CityType.name NOT LIKE 'Detroit') "
+        "WHERE flight_number = $2 AND origin_id = (SELECT LocationType.id "
+                                                  "FROM LocationType "
+                                                        "JOIN CityType ON (CityType.id = LocationType.city_id) "
+                                                  "WHERE CityType.name = 'Detroit') "
+                                                   "AND status_id = (SELECT id FROM StatusType "
+                                                                    "WHERE StatusType.name LIKE 'Standby' AND StatusType.name LIKE 'Delayed'; "
+                                                                          
+    );
+
+    connection.prepare(
+        "get_destination",
+        "SELECT CityType.name FROM Flight "
+            "JOIN LocationType ON (Flight.destination_id = CityType.id)  "
+        "WHERE flight_number = $1; "
+    );
+
+    pqxx::result rows;
+    try
+    {
+        rows = query.exec_prepared("update_destination", newDestination, flightNum);
+    }
+    catch (const std::exception& e)
+    {
+        std::cerr << e.what() << std::endl;
+        return Error::DBERROR;
+    }
+
+    query.commit();
+
+    try
+    {    
+        rows = query.exec_prepared("get_destination", flightNum);
+    }
+    catch (const std::exception& e)
+    {
+        std::cerr << e.what() << std::endl;
+        return Error::DBERROR;
+    }
+    
+    for(auto it = rows.begin(); it != rows.end(); ++it) {
+         std::cout << "The new destination for the flight is " << it[0].as<std::string>() << std::endl;
+    }
+
+    return Error::SUCCESS;
 }
