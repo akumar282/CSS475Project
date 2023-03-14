@@ -67,6 +67,8 @@ const std::map<std::string, operation_t> Operation::commandList = {
     {"mealTypes", Operation::c_mealTypes},
     {"meals", Operation::c_meals},
     {"changeStatus", Operation::c_changeStatus},
+    {"addCargo", Operation::c_addCargo},
+    {"removeCargo", Operation::c_removeCargo},
     {"changeDestination", Operation::c_changeDestination}
 };
 
@@ -300,7 +302,7 @@ error_t Operation::arrive(const API& api, const std::list<std::string>& args) {
     return Error::SUCCESS;
 }
 
-error_t Operation::addCargo(const API& api, const std::list<std::string>& args) {
+error_t Operation::addCargo(const API& api, const std::list<std::string>& args) {// todo redo with barcode and cargo weight
     if(args.size() != 2) return Error::BADARGS;
     std::string flightNum = args.front();
     if(!isValidFlightNum(api, flightNum)) return Error::BADARGS;
@@ -529,7 +531,7 @@ error_t Operation::checkCargo(const API& api, const std::list<std::string>& args
     std::cout.flush();
     return Error::SUCCESS;
 }
-error_t Operation::mealsOffered(const API& api, const std::list<std::string>& args) {
+error_t Operation::mealTypes(const API& api, const std::list<std::string>& args) {
     if(args.empty()) return Error::BADARGS;
     std::string flightNum = args.front();
     //checks for valid flight number and if its a duplicate
@@ -567,64 +569,62 @@ error_t Operation::mealsOffered(const API& api, const std::list<std::string>& ar
 }
 
 
-error_t Operation::passengers(const API& api, const std::list<std::string>& args) {
+error_t Operation::passengers(const API& api, const std::list<std::string>& args) { //TODO MAKE SURE THIS WORKS
     if (args.size() != 2) return Error::BADARGS;
 
     auto it = args.begin();
 
     std::string flightNum = *(it);
     if (!isValidFlightNum(api, flightNum)) return Error::BADARGS;
-    
-    std::string numPassengers = *(++it);
 
     pqxx::connection connection = api.begin();
     pqxx::work query(connection);
 
-    connection.prepare(
-        "update_passengers",
-        "UPDATE Flight "
-        "SET num_passengers = num_passengers + $1 "
-        "WHERE flight_number = $2 AND (num_passengers + $1) > 0 AND (num_passengers + $1) < (SELECT max_passengers FROM AirplaneType WHERE id = Flight.airplane_id); "
-    );
+    // connection.prepare(
+    //     "update_passengers",
+    //     "UPDATE Flight "
+    //     "SET num_passengers = num_passengers + $1 "
+    //     "WHERE flight_number = $2 AND (num_passengers + $1) > 0 AND (num_passengers + $1) < (SELECT max_passengers FROM AirplaneType WHERE id = Flight.airplane_id); "
+    // );
 
-    connection.prepare(
-        "get_passengers",
-        "SELECT num_passengers FROM flight "
-        "WHERE flight_number = $1"
-        ";"
-    );
+    // connection.prepare(
+    //     "get_passengers",
+    //     "SELECT num_passengers FROM flight "
+    //     "WHERE flight_number = $1"
+    //     ";"
+    // );
 
-    pqxx::result rows;
-    try
-    {
-        rows = query.exec_prepared("update_passengers", numPassengers, flightNum);
-    }
-    catch (const std::exception& e)
-    {
-        std::cerr << e.what() << std::endl;
-        return Error::DBERROR;
-    }
+    // pqxx::result rows;
+    // try
+    // {
+    //     rows = query.exec_prepared("update_passengers", numPassengers, flightNum);
+    // }
+    // catch (const std::exception& e)
+    // {
+    //     std::cerr << e.what() << std::endl;
+    //     return Error::DBERROR;
+    // }
 
-    if(rows.affected_rows() != 1) {
-        std::cout << "Error: Could not update passengers." << std::endl;
-        return Error::DBERROR;
-    }
+    // if(rows.affected_rows() != 1) {
+    //     std::cout << "Error: Could not update passengers." << std::endl;
+    //     return Error::DBERROR;
+    // }
 
-    query.commit();
+    // query.commit();
 
-    try
-    {    
-        rows = query.exec_prepared("get_passengers", flightNum);
-    }
-    catch (const std::exception& e)
-    {
-        std::cerr << e.what() << std::endl;
-        return Error::DBERROR;
-    }
+    // try
+    // {    
+    //     rows = query.exec_prepared("get_passengers", flightNum);
+    // }
+    // catch (const std::exception& e)
+    // {
+    //     std::cerr << e.what() << std::endl;
+    //     return Error::DBERROR;
+    // }
     
-    for(auto it = rows.begin(); it != rows.end(); ++it) {
-         std::cout << "Flight now has " << it[0].as<std::string>() << " passengers." << std::endl;
-    }
+    // for(auto it = rows.begin(); it != rows.end(); ++it) {
+    //      std::cout << "Flight now has " << it[0].as<std::string>() << " passengers." << std::endl;
+    // }
 
     return Error::SUCCESS;
 }
@@ -691,9 +691,12 @@ error_t Operation::changeStatus(const API& api, const std::list<std::string>& ar
 
     return Error::SUCCESS;
 }
+// args {flightNum, barcode}
+error_t Operation::removeCargo(const API& api, const std::list<std::string>& args) {
 
 
 
+}
 // Set destination: Update the destination
 //          Edge 1: Can't be cancelled, arrived, or in the air
 //          Edge 2: The origin needs to be our airport 
