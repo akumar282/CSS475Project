@@ -799,6 +799,10 @@ error_t Operation::changeDestination(const API& api, const std::list<std::string
     return Error::SUCCESS;
 }
 
+// Set origin: Update the origin
+//          Edge 1: Can't be cancelled, arrived, or in the air
+//          Edge 2: The destination needs to be our airport 
+//   
 error_t Operation::changeOrigin(const API &api,
                                      const std::list<std::string> &args) {
     if (args.empty()) return Error::BADARGS;
@@ -806,7 +810,7 @@ error_t Operation::changeOrigin(const API &api,
     auto it = args.begin();
 
     std::string flightNum = *(it);
-    if (!isValidFlightNum(api, flightNum)) return Error::BADARGS;
+    if (!isValidUpdateFlightnum(flightNum)) return Error::BADARGS;
 
     std::string newOrigin = *(++it);
     if (!isValidCity(newOrigin)) return Error::BADARGS;
@@ -818,12 +822,12 @@ error_t Operation::changeOrigin(const API &api,
         "update_origin",
         "UPDATE Flight "
         "SET origin_id =   (SELECT LocationType.id "
-        "FROM LocationType "
-        "JOIN CityType ON (CityType.id = LocationType.city_id) "
-        "WHERE CityType.name = $1 AND CityType.name NOT LIKE 'Detroit') "
+                            "FROM LocationType "
+                                "JOIN CityType ON (CityType.id = LocationType.city_id) "
+                            "WHERE CityType.name = $1 AND CityType.name NOT LIKE 'Detroit') "
         "WHERE flight_number = $2 "
-        "AND origin_id = 1 "
-        "AND status_id = 4 OR status_id = 1"
+        "AND destination_id = 1 "
+        "AND (status_id = 4 OR status_id = 1) "
 
     );
 
@@ -853,8 +857,7 @@ error_t Operation::changeOrigin(const API &api,
     }
 
     for (auto it = rows.begin(); it != rows.end(); ++it) {
-         std::cout << "The new destination for the flight is "
-                   << it[0].as<std::string>() << std::endl;
+          std::cout << "The new origin for the flight <" << flightNum << "> is " << it[0].as<std::string>() << std::endl;
     }
 
     return Error::SUCCESS;
