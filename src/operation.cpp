@@ -694,8 +694,28 @@ error_t Operation::changeStatus(const API& api, const std::list<std::string>& ar
 }
 // args {flightNum, barcode}
 error_t Operation::removeCargo(const API& api, const std::list<std::string>& args) {
-
-
+    if (args.empty()) return Error::BADARGS;
+    auto it = args.begin();
+    std::string flightNum = *(it);
+    if (!isValidFlightNum(api, flightNum)) return Error::BADARGS;
+    std::string barcode = *(++it);
+    if (!isValidBarcode(barcode)) return Error::BADARGS;
+    pqxx::connection connection = api.begin();
+    pqxx::work query(connection);
+    connection.prepare(
+        "remove_cargo",
+        "DELETE FROM Cargo "
+        "WHERE flight_id = (SELECT id FROM Flight WHERE flight_number = $1) "
+            "AND barcode = $2; "
+    );
+    pqxx::result rows = query.exec_prepared("remove_cargo", flightNum, barcode);
+    query.commit();
+    if (rows.affected_rows() == 0) {
+        std::cout << "Cargo with barcode: "+ barcode+ " does not exist on flight: "+flightNum << std::endl;
+        return Error::BADARGS;
+    }
+    std::cout << "Cargo with barcode: "+ barcode+ " has been removed from flight: "+flightNum << std::endl;
+    return Error::SUCCESS;
 
 }
 // Set destination: Update the destination
