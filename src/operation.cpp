@@ -168,9 +168,9 @@ error_t Operation::shell_exit() {
 
 error_t Operation::status(const API& api, const std::list<std::string>& args) {
     // #TODO add rest of get plane info here:
-    if(args.empty()) std::cerr << "empty arguments"<< std::endl; return Error::BADARGS;
+    if(args.empty()) {std::cerr << "empty arguments"<< std::endl; return Error::BADARGS;}
     std::string flightNum = args.front();
-    if(!isValidFlightNum(api, flightNum)) std::cerr << "Flight " << flightNum << " already exists." << std::endl; return Error::BADARGS;
+    if(!isValidFlightNum(api, flightNum)) {std::cerr << "Flight " << flightNum << " already exists." << std::endl; return Error::BADARGS;}
     // flight number was specified and is valid
     pqxx::connection connection = api.begin();
     pqxx::work query(connection);
@@ -365,15 +365,15 @@ error_t Operation::arrive(const API& api, const std::list<std::string>& args) {
 }
 // flight number , cargo weight, cargo barcode
 error_t Operation::addCargo(const API& api, const std::list<std::string>& args) {// todo redo with barcode and cargo weight
-    if(args.empty()) std::cerr << "empty arguments"<< std::endl; return Error::BADARGS;
+    if(args.empty()) {std::cerr << "empty arguments"<< std::endl; return Error::BADARGS;}
     auto it = args.begin();
     std::string flightNum = *(it);
-    if(!isValidFlightNum(api, flightNum)) std::cerr << "Flight " << flightNum << " already exists." << std::endl; return Error::BADARGS;
+    if(!isValidFlightNum(api, flightNum)) {std::cerr << "Flight " << flightNum << " already exists." << std::endl; return Error::BADARGS;}
     std::string cargo = *(++it);
-    const std::regex validCargo("[0-9]+(\.[0-9]+)?");
-    if (!std::regex_match(flightNum, validCargo)) std::cerr << "invalid CargoWeight" << std::endl; return Error::BADARGS;
+    const std::regex validCargo("[0-9]+(\\.[0-9]+)?");
+    if (!std::regex_match(flightNum, validCargo)) {std::cerr << "invalid CargoWeight" << std::endl; return Error::BADARGS;}
     std::string barcode = *(++it);
-    if(!isValidBarcode(barcode)) std::cerr << "barcode: " << barcode << " is invalid" << std::endl; return Error::BADARGS;
+    if(!isValidBarcode(barcode)) {std::cerr << "barcode: " << barcode << " is invalid" << std::endl; return Error::BADARGS;}
     
     // flight number was specified and is valid
     pqxx::connection connection = api.begin();
@@ -481,14 +481,14 @@ error_t Operation::list(const API& api) {
 } 
 
 error_t Operation::delay(const API& api, const std::list<std::string>& args) {
-    if(args.empty()) std::cerr << "empty arguments"<< std::endl; return Error::BADARGS;
+    if(args.empty()) {std::cerr << "empty arguments"<< std::endl; return Error::BADARGS;}
 
     auto it = args.begin();
 
     std::string flightNum = *it;
-    if(!isValidFlightNum(api, flightNum)) std::cerr << "Flight " << flightNum << " already exists." << std::endl; return Error::BADARGS;
+    if(!isValidFlightNum(api, flightNum)) {std::cerr << "Flight " << flightNum << " already exists." << std::endl; return Error::BADARGS;}
     std::string delay = *(++it);
-    if(!isValidTime(delay)) std::cerr << "invalid delay"<< std::endl; return Error::BADARGS;
+    if(!isValidTime(delay)) {std::cerr << "invalid delay"<< std::endl; return Error::BADARGS;}
 
     pqxx::connection connection = api.begin();
     pqxx::work query(connection);
@@ -525,7 +525,7 @@ error_t Operation::meals(const API& api, const std::list<std::string>& args) {
     if(args.empty()) return Error::BADARGS;
 
     std::string flightNum = args.front();
-    if(!isValidFlightNum(api, flightNum)) std::cerr << "Flight " << flightNum << " already exists." << std::endl; return Error::BADARGS;
+    if(!isValidFlightNum(api, flightNum)) {std::cerr << "Flight " << flightNum << " already exists." << std::endl; return Error::BADARGS;}
 
     pqxx::connection connection = api.begin();
     pqxx::work query(connection);
@@ -566,10 +566,10 @@ error_t Operation::meals(const API& api, const std::list<std::string>& args) {
 }
 // flightnum and cargo 
 error_t Operation::checkCargo(const API& api, const std::list<std::string>& args) {
-    if(args.empty()) std::cerr << "empty arguments"<< std::endl; return Error::BADARGS;
+    if(args.empty()) {std::cerr << "empty arguments"<< std::endl; return Error::BADARGS;}
     auto it = args.begin();
     std::string flightNum = *(it);
-    if(!isValidFlightNum(api, flightNum)) std::cerr << "Flight " << flightNum << " already exists." << std::endl; return Error::BADARGS;
+    if(!isValidFlightNum(api, flightNum)) {std::cerr << "Flight " << flightNum << " already exists." << std::endl; return Error::BADARGS;}
     
     // flight number was specified and is valid
     pqxx::connection connection = api.begin();
@@ -597,10 +597,10 @@ error_t Operation::checkCargo(const API& api, const std::list<std::string>& args
     return Error::SUCCESS;
 }
 error_t Operation::mealTypes(const API& api, const std::list<std::string>& args) {
-    if(args.empty()) std::cerr << "empty arguments"<< std::endl; return Error::BADARGS;
+    if(args.empty()) {std::cerr << "empty arguments"<< std::endl; return Error::BADARGS;}
     std::string flightNum = args.front();
     //checks for valid flight number and if its a duplicate
-    if(!isValidFlightNum(api, flightNum)) std::cerr << "Flight " << flightNum << " already exists." << std::endl; return Error::BADARGS; 
+    if(!isValidFlightNum(api, flightNum)) {std::cerr << "Flight " << flightNum << " already exists." << std::endl; return Error::BADARGS; }
     pqxx::connection connection = api.begin();
     pqxx::work query(connection);
 
@@ -635,10 +635,10 @@ error_t Operation::mealTypes(const API& api, const std::list<std::string>& args)
 
 // flightnum
 error_t Operation::passengers(const API& api, const std::list<std::string>& args) { //TODO MAKE SURE THIS WORKS
-    if(args.empty()) std::cerr << "empty arguments"<< std::endl; return Error::BADARGS;
+    if(args.empty()) {std::cerr << "empty arguments"<< std::endl; return Error::BADARGS;}
     auto it = args.begin();
     std::string flightNum = *(it);
-    if (!isValidFlightNum(api, flightNum)) std::cerr << "Flight " << flightNum << " already exists." << std::endl; return Error::BADARGS;
+    if (!isValidFlightNum(api, flightNum)) {std::cerr << "Flight " << flightNum << " already exists." << std::endl; return Error::BADARGS;}
     std::string barcode = generate_random_string(12);
     barcode = isDupBarcode(api, barcode);
     pqxx::connection connection = api.begin();
@@ -656,15 +656,15 @@ error_t Operation::passengers(const API& api, const std::list<std::string>& args
 
 
 error_t Operation::changeStatus(const API& api, const std::list<std::string>& args) {
-    if (args.empty()) std::cerr << "empty arguments"<< std::endl; return Error::BADARGS;
+    if (args.empty()) {std::cerr << "empty arguments"<< std::endl; return Error::BADARGS;}
 
     auto it = args.begin();
 
     std::string flightNum = *(it);
-    if (!isValidUpdateFlightnum(flightNum)) std::cerr << "Flight " << flightNum << " already exists." << std::endl; return Error::BADARGS;
+    if (!isValidUpdateFlightnum(flightNum)) {std::cerr << "Flight " << flightNum << " already exists." << std::endl; return Error::BADARGS;}
     
     std::string newStatus = *(++it);
-    if (!std::regex_match(newStatus, std::regex("(Standby|Boarding|Departed|Delayed|In Transit|Arrived|Cancelled)"))) std::cerr << "Invalid Status" << std::endl; return Error::BADARGS;
+    if (!std::regex_match(newStatus, std::regex("(Standby|Boarding|Departed|Delayed|In Transit|Arrived|Cancelled)"))) {std::cerr << "Invalid Status" << std::endl; return Error::BADARGS;}
     
     std::cout << "Flight number: " << flightNum << std::endl;
     std::cout << "New status: " << newStatus << std::endl;
@@ -717,12 +717,12 @@ error_t Operation::changeStatus(const API& api, const std::list<std::string>& ar
 }
 // args {flightNum, barcode}
 error_t Operation::removeCargo(const API& api, const std::list<std::string>& args) {
-    if (args.empty()) std::cerr << "empty arguments"<< std::endl; return Error::BADARGS;
+    if (args.empty()){ std::cerr << "empty arguments"<< std::endl; return Error::BADARGS;}
     auto it = args.begin();
     std::string flightNum = *(it);
-    if (!isValidFlightNum(api, flightNum)) std::cerr << "Flight " << flightNum << " already exists." << std::endl; return Error::BADARGS;
+    if (!isValidFlightNum(api, flightNum)) {std::cerr << "Flight " << flightNum << " already exists." << std::endl; return Error::BADARGS;}
     std::string barcode = *(++it);
-    if (!isValidBarcode(barcode)) std::cerr << "barcode: " << barcode << " is invalid" << std::endl; return Error::BADARGS;
+    if (!isValidBarcode(barcode)) {std::cerr << "barcode: " << barcode << " is invalid" << std::endl; return Error::BADARGS;}
     pqxx::connection connection = api.begin();
     pqxx::work query(connection);
     connection.prepare(
@@ -747,15 +747,15 @@ error_t Operation::removeCargo(const API& api, const std::list<std::string>& arg
 //          Edge 2: The origin needs to be our airport 
 //          
 error_t Operation::changeDestination(const API& api, const std::list<std::string>& args) {
-    if (args.empty()) std::cerr << "empty arguments"<< std::endl; return Error::BADARGS;
+    if (args.empty()) {std::cerr << "empty arguments"<< std::endl; return Error::BADARGS;}
 
     auto it = args.begin();
 
     std::string flightNum = *(it);
-    if (!isValidUpdateFlightnum(flightNum)) std::cerr << "Flight " << flightNum << " already exists." << std::endl; return Error::BADARGS;
+    if (!isValidUpdateFlightnum(flightNum)) {std::cerr << "Flight " << flightNum << " already exists." << std::endl; return Error::BADARGS;}
     
     std::string newDestination = *(++it);
-    if (!isValidICAO(newDestination)) std::cerr << "not a valid locaiton" << std::endl;  return Error::BADARGS;
+    if (!isValidICAO(newDestination)) {std::cerr << "not a valid locaiton" << std::endl;  return Error::BADARGS;}
 
     pqxx::connection connection = api.begin();
     pqxx::work query(connection);
@@ -814,12 +814,12 @@ error_t Operation::changeDestination(const API& api, const std::list<std::string
 //          Edge 2: The destination needs to be our airport 
 //   
 error_t Operation::changeOrigin(const API &api, const std::list<std::string> &args) {
-    if (args.empty()) std::cerr << "empty arguments"<< std::endl; return Error::BADARGS;
+    if (args.empty()) {std::cerr << "empty arguments"<< std::endl; return Error::BADARGS;}
 
     auto it = args.begin();
 
     std::string flightNum = *(it);
-    if (!isValidUpdateFlightnum(flightNum)) std::cerr << "Flight " << flightNum << " already exists." << std::endl;  return Error::BADARGS;
+    if (!isValidUpdateFlightnum(flightNum)) {std::cerr << "Flight " << flightNum << " already exists." << std::endl;  return Error::BADARGS;}
 
     std::string newOrigin = *(++it);
     if (!isValidICAO(newOrigin)) return Error::BADARGS;
