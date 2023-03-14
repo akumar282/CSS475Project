@@ -101,10 +101,7 @@ static bool isValidAirline(const std::string& airline) {
     const std::regex validAirline("[a-zA-Z ]+");
     return std::regex_match(airline, validAirline);
 }
-static bool isValidCity(const std::string& city) {
-    const std::regex validCity("[a-zA-Z ]+");
-    return std::regex_match(city, validCity);
-}
+
 
 
 
@@ -663,7 +660,7 @@ error_t Operation::changeStatus(const API& api, const std::list<std::string>& ar
     if (!isValidUpdateFlightnum(flightNum)) return Error::BADARGS;
     
     std::string newStatus = *(++it);
-    if (!std::regex_match(newStatus, std::regex("(?i)(Standby|Boarding|Departed|Delayed|In Transit|Arrived|Cancelled)"))) return Error::BADARGS;
+    if (!std::regex_match(newStatus, std::regex("(Standby|Boarding|Departed|Delayed|In Transit|Arrived|Cancelled)"))) return Error::BADARGS;
     
     std::cout << "Flight number: " << flightNum << std::endl;
     std::cout << "New status: " << newStatus << std::endl;
