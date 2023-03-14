@@ -55,7 +55,7 @@ static bool isValidFlightNum(const API& api, const std::string& flightNum) {
     pqxx::result result1 = query.exec_prepared("CheckDup", flightNum);
     return result1.at(0).at(0).as<int>() == 1;
 }
-static bool isValidUpdateFlightnum(const API& api, const std::string& flightNum) {
+static bool isValidUpdateFlightnum(const std::string& flightNum) {
     const std::regex validFlightNumber("[A-Z]{2}[0-9]{2,4}");
     if (!std::regex_match(flightNum, validFlightNumber))
         return false;
@@ -641,7 +641,7 @@ error_t Operation::changeStatus(const API& api, const std::list<std::string>& ar
     auto it = args.begin();
 
     std::string flightNum = *(it);
-    if (!isValidUpdateFlightnum(api, flightNum)) return Error::BADARGS;
+    if (!isValidUpdateFlightnum(flightNum)) return Error::BADARGS;
     
     std::string newStatus = *(++it);
     if (!std::regex_match(newStatus, std::regex("(Standby|Boarding|Departed|Delayed|In Transit|Arrived|Cancelled)"))) return Error::BADARGS;
